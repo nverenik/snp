@@ -1,0 +1,6 @@
+# Visual Studio 2012 temporary files
+*.sdf
+*.suo
+*.opensdf
+*.vcxproj.user
+Debug/
