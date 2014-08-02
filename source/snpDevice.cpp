@@ -5,6 +5,18 @@
 
 NS_SNP_BEGIN
 
+#define snpBreakIf(__statement__, __message__) { \
+	if (__statement__) { \
+		fprintf(stderr, "snp-cuda ERROR: %s\n", (__message__)); \
+		break; \
+	} \
+}
+
+#define snpCheckCuda(__statement__) { \
+	cudaError_t ret_cuda = (__statement__); \
+	snpBreakIf(ret_cuda != cudaSuccess, cudaGetErrorString(ret_cuda)); \
+}
+
 bool snpDeviceImpl::m_exists = false;
 
 snpDeviceImpl * snpDeviceImpl::create(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
@@ -23,6 +35,13 @@ bool snpDeviceImpl::init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
 	m_cellSize = cellSize;
 	m_cellsPerPU = cellsPerPU;
 	m_numberOfPU = numberOfPU;
+
+	do
+	{
+		return true;
+	}
+	while(false);
+	return false;
 
 	//do
 	//{
@@ -45,8 +64,6 @@ bool snpDeviceImpl::init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
 	//}
 	//while(false);
 	//return false;
-
-	return true;
 }
 
 snpDeviceImpl::snpDeviceImpl()

@@ -38,4 +38,11 @@ typedef double float64;
 #define snpUpdateBitsAND(__data__, __mask__, __bitfield__) { (__data__) = ((__data__) & (~(__mask__) | (__bitfield__))); }
 #define snpUpdateBitsOR(__data__, __mask__, __bitfield__) { (__data__) = ((__data__) | ((__mask__) & (__bitfield__))); }
 
+#define snpBitfieldSet(__bitfield__, __value__) { \
+	uint16 size = sizeof(__bitfield__) / sizeof((__bitfield__)[0]); \
+	for (uint16 index = 0; index < size; index++) { \
+		(__bitfield__)[index] = (__value__); \
+	} \
+}
+
 #endif //__SNP_MACROS_H__

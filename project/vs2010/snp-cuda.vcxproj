@@ -85,7 +85,8 @@
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
-      <AdditionalDeps>$(ProjectDir)\..\..\source</AdditionalDeps>
+      <AdditionalDeps>
+      </AdditionalDeps>
       <CompileOut>$(IntDir)%(Filename)%(Extension).obj</CompileOut>
     </CudaCompile>
   </ItemDefinitionGroup>

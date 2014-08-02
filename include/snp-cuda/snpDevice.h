@@ -12,7 +12,7 @@ template<uint16 bitwidth>
 class snpDevice
 {
 private:
-	static uint16 s_cellSize;
+	static const uint16 s_cellSize = static_cast<uint16>(static_cast<float>(bitwidth) / (sizeof(uint32) * 8) + 0.5f);
 
 public:
 	struct snpBitfield
@@ -28,15 +28,24 @@ public:
 		snpOr		= 0x03
 	};
 
-	struct snpInstruction
+	typedef union
 	{
-		bool			singleCell;
-		snpOperation	operation;
-		snpBitfield		addressMask;
-		snpBitfield		addressData;
-		snpBitfield		dataMask;
-		snpBitfield		dataData;
-	};
+		struct
+		{
+			uint32 bitfield[s_cellSize * 4 + 1];
+		} raw;
+
+		struct
+		{
+			snpBitfield		addressMask;
+			snpBitfield		addressData;
+			snpBitfield		dataMask;
+			snpBitfield		dataData;
+			bool			singleCell	: 1;
+			snpOperation	operation	: 2;
+		
+		} field;
+	} snpInstruction;
 
 public:
 	snpDevice();
@@ -99,9 +108,6 @@ private:
 
 	static bool m_exists;
 };
-
-template<uint16 bitwidth>
-uint16 snpDevice<bitwidth>::s_cellSize = static_cast<uint16>(static_cast<float>(bitwidth) / (sizeof(uint32) * 8) + 0.5f);
 
 template<uint16 bitwidth>
 snpDevice<bitwidth>::snpDevice()
