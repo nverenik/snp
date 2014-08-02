@@ -3,4 +3,6 @@
 *.suo
 *.opensdf
 *.vcxproj.user
+*.pdb
 Debug/
+ipch/

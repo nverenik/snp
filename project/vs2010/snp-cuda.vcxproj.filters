@@ -1,14 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <CudaCompile Include="..\..\source\kernel.cu">
+      <Filter>source</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
     <Filter Include="include">
-      <UniqueIdentifier>{918d3abd-45d0-4715-879c-e69517953c5c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="include\snp-cuda">
-      <UniqueIdentifier>{73c3085c-7b4a-4f81-bc1d-ec6b9b05b3e3}</UniqueIdentifier>
+      <UniqueIdentifier>{5d39f50e-d90d-4f76-b09c-70aeadda8d32}</UniqueIdentifier>
     </Filter>
     <Filter Include="source">
-      <UniqueIdentifier>{437037ef-0cdc-4251-a30e-55b23625f51c}</UniqueIdentifier>
+      <UniqueIdentifier>{668bdcdb-b78a-4114-83de-b195dbeae1db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\snp-cuda">
+      <UniqueIdentifier>{c6cd9082-9610-4a21-a52f-09ff3ce66232}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -18,11 +23,14 @@
     <ClInclude Include="..\..\include\snp-cuda\snpDevice.h">
       <Filter>include\snp-cuda</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\snp-cuda\snpErrorCode.h">
+      <Filter>include\snp-cuda</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\snp-cuda\snpMacros.h">
       <Filter>include\snp-cuda</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\snp-cuda\snpErrorCode.h">
-      <Filter>include\snp-cuda</Filter>
+    <ClInclude Include="..\..\source\kernel.h">
+      <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

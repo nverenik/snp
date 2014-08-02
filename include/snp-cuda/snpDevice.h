@@ -42,8 +42,8 @@ public:
 	snpDevice();
 	~snpDevice();
 
-	bool configure(uint32 cellsPerPU, uint32 numberOfPU);
-	bool end();
+	snpErrorCode configure(uint32 cellsPerPU, uint32 numberOfPU);
+	snpErrorCode end();
 
 	inline uint16 getCellSize() const
 	{
@@ -61,11 +61,11 @@ public:
 	}
 
 	// Execute isntruction in device, returns True if at least one cell activated
-	bool exec(const snpInstruction &instruction);
+	snpErrorCode exec(const snpInstruction &instruction);
 
 	// Read data from the 1st cell which activated while the last instruction
 	// Returns False if no one cell is selected
-	bool read(snpBitfield &bitfield);
+	snpErrorCode read(snpBitfield &bitfield);
 
 private:
 	snpDeviceImpl	*m_device;
@@ -78,6 +78,8 @@ private:
 	snpDeviceImpl();
 	~snpDeviceImpl();
 
+	bool init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU);
+
 	inline uint32 getCellsPerPU() const
 	{
 		return m_cellsPerPU;
@@ -88,6 +90,7 @@ private:
 		return m_numberOfPU;
 	}
 
+	uint32	m_cellSize;
 	uint32	m_cellsPerPU;
 	uint32	m_numberOfPU;
 
@@ -116,43 +119,41 @@ snpDevice<bitwidth>::~snpDevice()
 }
 
 template<uint16 bitwidth>
-bool snpDevice<bitwidth>::configure(uint32 cellsPerPU, uint32 numberOfPU)
+snpErrorCode snpDevice<bitwidth>::configure(uint32 cellsPerPU, uint32 numberOfPU)
 {
 	if (m_device != nullptr)
 	{
-		// return typed error
-		return false;
+		return snpErrorCode::DEVICE_ALREADY_CONFIGURED;
 	}
 
 	m_device = snpDeviceImpl::create(s_cellSize, cellsPerPU, numberOfPU);
-	return (m_device != nullptr);
+	return (m_device != nullptr) ? snpErrorCode::SUCCEEDED : snpErrorCode::GPU_INIT_ERROR;
 }
 
 template<uint16 bitwidth>
-bool snpDevice<bitwidth>::end()
+snpErrorCode snpDevice<bitwidth>::end()
 {
 	if (m_device == nullptr)
 	{
-		// return typed error
-		return false;
+		return snpErrorCode::DEVICE_NOT_CONFIGURED;
 	}
 
 	delete m_device;
 	m_device = nullptr;
 
-	return true;
+	return snpErrorCode::SUCCEEDED;
 }
 
 template<uint16 bitwidth>
-bool snpDevice<bitwidth>::exec(const snpInstruction &instruction)
+snpErrorCode snpDevice<bitwidth>::exec(const snpInstruction &instruction)
 {
-	return false;
+	return snpErrorCode::SUCCEEDED;
 }
 
 template<uint16 bitwidth>
-bool snpDevice<bitwidth>::read(snpBitfield &bitfield)
+snpErrorCode snpDevice<bitwidth>::read(snpBitfield &bitfield)
 {
-	return false;
+	return snpErrorCode::SUCCEEDED;
 }
 
 NS_SNP_END

@@ -10,8 +10,12 @@ class snpErrorCode
 public:
 	typedef enum
 	{
-		NO_ERROR,
-		DEVICE_NOT_FOUND
+		SUCCEEDED = 0,
+
+		DEVICE_ALREADY_CONFIGURED,
+		DEVICE_NOT_CONFIGURED,
+		GPU_INIT_ERROR
+
 	} enum_type;
 
 private:
@@ -22,7 +26,7 @@ public:
 		: m_value(value)
 	{
 		// don't forget to update assert
-		snpAssert(m_value >= NO_ERROR && m_value <= NO_ERROR);
+		snpAssert(m_value >= SUCCEEDED && m_value <= GPU_INIT_ERROR);
 	}
 
 	operator enum_type() const
