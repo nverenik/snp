@@ -67,6 +67,8 @@ public:
 	// Returns False if no one cell is selected
 	bool read(snpBitfield &bitfield, snpErrorCode *error = nullptr);
 
+	bool dump();
+
 private:
 	snpDeviceImpl	*m_device;
 };
@@ -79,6 +81,7 @@ private:
 	~snpDeviceImpl();
 
 	bool init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU);
+	void dump();
 
 	bool exec(bool singleCell, snpOperation operation, const uint32 * const instruction);
 	bool read(uint32 *bitfield);
@@ -98,6 +101,7 @@ private:
 	uint32	m_numberOfPU;
 
 	uint32	*d_memory;
+	uint32	*d_instruction;
 	int32	*d_output;
 
 	int32	*h_output;
@@ -182,6 +186,17 @@ bool snpDevice<bitwidth>::read(snpBitfield &bitfield, snpErrorCode *error/* = nu
 	if (error != nullptr)
 		(*error) = snpErrorCode::DEVICE_NOT_CONFIGURED;
 
+	return false;
+}
+
+template<uint16 bitwidth>
+bool snpDevice<bitwidth>::dump()
+{
+	if (m_device != nullptr)
+	{
+		m_device->dump();
+		return true;
+	}
 	return false;
 }
 

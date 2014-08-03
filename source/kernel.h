@@ -14,6 +14,7 @@ extern "C" int32 kernel_exec(
 	uint32 cellsPerPU,
 	uint32 numberOfPU,
 	uint32 *d_memory,
+	uint32 *d_instruction,
 	int32 *d_output,
 	int32 *h_output,
 	uint32 *h_cell

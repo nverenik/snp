@@ -54,6 +54,7 @@ snpDeviceImpl::snpDeviceImpl()
 	, m_cellsPerPU(0)
 	, m_numberOfPU(0)
 	, d_memory(nullptr)
+	, d_instruction(nullptr)
 	, d_output(nullptr)
 	, h_output(nullptr)
 	, h_cell(nullptr)
@@ -65,6 +66,7 @@ snpDeviceImpl::snpDeviceImpl()
 snpDeviceImpl::~snpDeviceImpl()
 {
 	snpCudaSafeCall(cudaFree(d_memory));
+	snpCudaSafeCall(cudaFree(d_instruction));
 	snpCudaSafeCall(cudaFree(d_output));
 	snpCudaSafeCall(cudaDeviceReset());
 
@@ -93,6 +95,7 @@ bool snpDeviceImpl::init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
 
 		// allocate processor memory in GPU
 		snpCheckCuda(cudaMalloc((void**)&d_memory, memorySize * sizeof(uint32)));
+		snpCheckCuda(cudaMalloc((void**)&d_instruction, 4 * cellSize * sizeof(uint32)));
 		snpCheckCuda(cudaMalloc((void**)&d_output, numberOfPU * sizeof(int32)));
 
 		// allocate buffer memory for output array
@@ -106,9 +109,31 @@ bool snpDeviceImpl::init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
 	return false;
 }
 
+void snpDeviceImpl::dump()
+{
+	const uint32 memorySize = m_cellSize * m_cellsPerPU * m_numberOfPU;
+	uint32 *buffer = new uint32[memorySize * sizeof(uint32)];
+	snpCudaSafeCall(cudaMemcpy(buffer, d_memory, memorySize * sizeof(uint32), cudaMemcpyDeviceToHost));
+
+	for (uint32 cellIndex = 0; cellIndex < m_cellsPerPU; cellIndex++)
+	{
+		for (uint32 puIndex = 0; puIndex < m_numberOfPU; puIndex++)
+		{
+			for (uint32 index = 0; index < m_cellSize; index++)
+			{
+				printf("%d ", buffer[(cellIndex * m_numberOfPU + puIndex) * m_cellSize + index]);
+			}
+			printf("  ");
+		}
+		printf("\n");
+	}
+
+	delete buffer;
+}
+
 bool snpDeviceImpl::exec(bool singleCell, snpOperation operation, const uint32 * const instruction)
 {
-	m_cellIndex = kernel_exec(singleCell, operation, instruction, m_cellSize, m_cellsPerPU, m_numberOfPU, d_memory, d_output, h_output, h_cell);
+	m_cellIndex = kernel_exec(singleCell, operation, instruction, m_cellSize, m_cellsPerPU, m_numberOfPU, d_memory, d_instruction, d_output, h_output, h_cell);
 	return (m_cellIndex != kCellNotFound);
 }
 
@@ -116,7 +141,7 @@ bool snpDeviceImpl::read(uint32 *bitfield)
 {
 	if (m_cellIndex != kCellNotFound)
 	{
-		snpCudaSafeCall(cudaMemcpy(bitfield, d_memory + m_cellIndex, m_cellSize * sizeof(uint32), cudaMemcpyDeviceToHost));
+		snpCudaSafeCall(cudaMemcpy(bitfield, d_memory + m_cellIndex * m_cellSize, m_cellSize * sizeof(uint32), cudaMemcpyDeviceToHost));
 		return true;
 	}
 	return false;
