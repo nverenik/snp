@@ -3,6 +3,7 @@
 
 #include <snp-cuda\snpMacros.h>
 #include <snp-cuda\snpErrorCode.h>
+#include <snp-cuda\snpOperation.h>
 
 NS_SNP_BEGIN
 
@@ -17,23 +18,15 @@ private:
 public:
 	struct snpBitfield
 	{
-		uint32 bitfield[s_cellSize];
-	};
-
-	enum snpOperation
-	{
-		snpAssign	= 0x00,
-		snpNot		= 0x01,
-		snpAnd		= 0x02,
-		snpOr		= 0x03
+		uint32 raw[s_cellSize];
 	};
 
 	typedef union
 	{
 		struct
 		{
-			uint32 bitfield[s_cellSize * 4 + 1];
-		} raw;
+			uint32 raw[s_cellSize * 4];
+		};
 
 		struct
 		{
@@ -41,8 +34,6 @@ public:
 			snpBitfield		addressData;
 			snpBitfield		dataMask;
 			snpBitfield		dataData;
-			bool			singleCell	: 1;
-			snpOperation	operation	: 2;
 		
 		} field;
 	} snpInstruction;
@@ -70,11 +61,11 @@ public:
 	}
 
 	// Execute isntruction in device, returns True if at least one cell activated
-	snpErrorCode exec(const snpInstruction &instruction);
+	bool exec(bool singleCell, snpOperation operation, const snpInstruction &instruction, snpErrorCode *error = nullptr);
 
 	// Read data from the 1st cell which activated while the last instruction
 	// Returns False if no one cell is selected
-	snpErrorCode read(snpBitfield &bitfield);
+	bool read(snpBitfield &bitfield, snpErrorCode *error = nullptr);
 
 private:
 	snpDeviceImpl	*m_device;
@@ -89,6 +80,9 @@ private:
 
 	bool init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU);
 
+	bool exec(bool singleCell, snpOperation operation, const uint32 * const instruction);
+	bool read(uint32 *bitfield);
+
 	inline uint32 getCellsPerPU() const
 	{
 		return m_cellsPerPU;
@@ -102,6 +96,13 @@ private:
 	uint32	m_cellSize;
 	uint32	m_cellsPerPU;
 	uint32	m_numberOfPU;
+
+	uint32	*d_memory;
+	int32	*d_output;
+
+	int32	*h_output;
+	uint32	*h_cell;
+	int32	m_cellIndex;
 
 	template<uint16 bitwidth>
 	friend class snpDevice;
@@ -151,15 +152,37 @@ snpErrorCode snpDevice<bitwidth>::end()
 }
 
 template<uint16 bitwidth>
-snpErrorCode snpDevice<bitwidth>::exec(const snpInstruction &instruction)
+bool snpDevice<bitwidth>::exec(bool singleCell, snpOperation operation, const snpInstruction &instruction, snpErrorCode *error/* = nullptr*/)
 {
-	return snpErrorCode::SUCCEEDED;
+	if (m_device != nullptr)
+	{
+		if (error != nullptr)
+			(*error) = snpErrorCode::SUCCEEDED;
+
+		return m_device->exec(singleCell, operation, instruction.raw);
+	}
+	
+	if (error != nullptr)
+		(*error) = snpErrorCode::DEVICE_NOT_CONFIGURED;
+
+	return false;
 }
 
 template<uint16 bitwidth>
-snpErrorCode snpDevice<bitwidth>::read(snpBitfield &bitfield)
+bool snpDevice<bitwidth>::read(snpBitfield &bitfield, snpErrorCode *error/* = nullptr*/)
 {
-	return snpErrorCode::SUCCEEDED;
+	if (m_device != nullptr)
+	{
+		if (error != nullptr)
+			(*error) = snpErrorCode::SUCCEEDED;
+
+		return m_device->read(bitfield.raw);
+	}
+	
+	if (error != nullptr)
+		(*error) = snpErrorCode::DEVICE_NOT_CONFIGURED;
+
+	return false;
 }
 
 NS_SNP_END

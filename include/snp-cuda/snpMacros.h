@@ -1,6 +1,7 @@
 #ifndef __SNP_MACROS_H__
 #define __SNP_MACROS_H__
 
+#include <stdio.h>
 #include <assert.h>
 
 #ifdef __cplusplus
@@ -34,9 +35,14 @@ typedef double float64;
 
 #define snpCompareBits(__data__, __mask__, __bitfield__) ((((__mask__) & (__data__)) ^ ((__mask__) & (__bitfield__))) == 0)
 #define snpUpdateBitsASSIGN(__data__, __mask__, __bitfield__) { (__data__) = ((~(__mask__) & (__data__)) | ((__mask__) & (__bitfield__))); }
-#define snpUpdateBitsNOT(__data__, __mask__) { (__data__) = (((__mask__) | (__data__)) & (~(__mask__) | ~(__data__))); }
+#define snpUpdateBitsNOT(__data__, __mask__, __bitfield__) { (__data__) = (((__mask__) | (__data__)) & (~(__mask__) | ~(__data__))); }
 #define snpUpdateBitsAND(__data__, __mask__, __bitfield__) { (__data__) = ((__data__) & (~(__mask__) | (__bitfield__))); }
 #define snpUpdateBitsOR(__data__, __mask__, __bitfield__) { (__data__) = ((__data__) | ((__mask__) & (__bitfield__))); }
+
+#define snpUpdateBits(__operation__, __data__, __mask__, __bitfield__, __cellSize__) \
+	for (uint32 index = 0; index < (__cellSize__); index++) { \
+		__operation__((__data__), (__mask__), (__bitfield__)) \
+	}
 
 #define snpBitfieldSet(__bitfield__, __value__) { \
 	uint16 size = sizeof(__bitfield__) / sizeof((__bitfield__)[0]); \

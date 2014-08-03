@@ -4,5 +4,7 @@
 *.opensdf
 *.vcxproj.user
 *.pdb
+*.log
 Debug/
+Release/
 ipch/

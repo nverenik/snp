@@ -32,6 +32,9 @@
     <ClInclude Include="..\..\source\kernel.h">
       <Filter>source</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\snp-cuda\snpOperation.h">
+      <Filter>include\snp-cuda</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\snpDevice.cpp">

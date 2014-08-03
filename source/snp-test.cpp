@@ -32,11 +32,8 @@ int main()
 	snpErrorCode result = device.configure(128, 32);
 
 	Device::snpInstruction instruction;
-	snpBitfieldSet(instruction.raw.bitfield, 0);
-	instruction.field.singleCell = true;
-	instruction.field.operation = Device::snpAssign;
+	snpBitfieldSet(instruction.raw, 0);
 
-	snpErrorCode result2 = device.exec(instruction);
-
+	device.exec(true, snpAssign, instruction);
 	return 0;
 }

@@ -19,7 +19,7 @@ public:
 	} enum_type;
 
 private:
-	const enum_type m_value;
+	enum_type m_value;
 
 public:
 	snpErrorCode(enum_type value)
@@ -32,6 +32,12 @@ public:
 	operator enum_type() const
 	{
 		return m_value;
+	}
+
+	snpErrorCode & operator =(const snpErrorCode &other)
+	{
+		(*this).m_value = other.m_value;
+		return (*this);
 	}
 };
 
