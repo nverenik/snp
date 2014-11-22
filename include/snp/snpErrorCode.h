@@ -1,7 +1,7 @@
 #ifndef __SNP_ERROR_CODE_H__
 #define __SNP_ERROR_CODE_H__
 
-#include <snp-cuda\snpMacros.h>
+#include <snp\snpMacros.h>
 
 NS_SNP_BEGIN
 

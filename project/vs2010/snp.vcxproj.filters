@@ -12,31 +12,31 @@
     <Filter Include="source">
       <UniqueIdentifier>{668bdcdb-b78a-4114-83de-b195dbeae1db}</UniqueIdentifier>
     </Filter>
-    <Filter Include="include\snp-cuda">
+    <Filter Include="include\snp">
       <UniqueIdentifier>{c6cd9082-9610-4a21-a52f-09ff3ce66232}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\snp-cuda\snp-cuda.h">
-      <Filter>include\snp-cuda</Filter>
+    <ClInclude Include="..\..\include\snp\snpDevice.h">
+      <Filter>include\snp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\snp-cuda\snpDevice.h">
-      <Filter>include\snp-cuda</Filter>
+    <ClInclude Include="..\..\include\snp\snpErrorCode.h">
+      <Filter>include\snp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\snp-cuda\snpErrorCode.h">
-      <Filter>include\snp-cuda</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\snp-cuda\snpMacros.h">
-      <Filter>include\snp-cuda</Filter>
+    <ClInclude Include="..\..\include\snp\snpMacros.h">
+      <Filter>include\snp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\kernel.h">
       <Filter>source</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\snp-cuda\snpOperation.h">
-      <Filter>include\snp-cuda</Filter>
+    <ClInclude Include="..\..\include\snp\snpOperation.h">
+      <Filter>include\snp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\snp-cuda\snpBackendConfig.h">
-      <Filter>include\snp-cuda</Filter>
+    <ClInclude Include="..\..\include\snp\snpBackendConfig.h">
+      <Filter>include\snp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\snp\snp.h">
+      <Filter>include\snp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

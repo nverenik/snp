@@ -1,4 +1,4 @@
-#include <snp-cuda\snpDevice.h>
+#include <snp\snpDevice.h>
 
 extern "C" const int32 kCellNotFound;
 

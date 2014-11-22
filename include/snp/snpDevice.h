@@ -1,10 +1,10 @@
 #ifndef __SNP_DEVICE_H__
 #define __SNP_DEVICE_H__
 
-#include <snp-cuda\snpBackendConfig.h>
-#include <snp-cuda\snpMacros.h>
-#include <snp-cuda\snpErrorCode.h>
-#include <snp-cuda\snpOperation.h>
+#include <snp\snpBackendConfig.h>
+#include <snp\snpMacros.h>
+#include <snp\snpErrorCode.h>
+#include <snp\snpOperation.h>
 
 NS_SNP_BEGIN
 

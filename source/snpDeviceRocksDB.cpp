@@ -1,4 +1,4 @@
-#include <snp-cuda\snpDevice.h>
+#include <snp\snpDevice.h>
 
 #if (SNP_TARGET_BACKEND == SNP_BACKEND_ROCKS_DB)
 

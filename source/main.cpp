@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <snp-cuda\snp-cuda.h>
+#include <snp\snp.h>
 using namespace snp;
 
 int main()

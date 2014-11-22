@@ -1,4 +1,4 @@
-#include <snp-cuda\snpDevice.h>
+#include <snp\snpDevice.h>
 
 #if (SNP_TARGET_BACKEND == SNP_BACKEND_GPU)
 
@@ -36,46 +36,6 @@ NS_SNP_BEGIN
 	if (ret_cuda != cudaSuccess) { \
 		snpLogError(cudaGetErrorString(ret_cuda)); \
 	} \
-}
-
-bool snpDeviceImpl::m_exists = false;
-
-snpDeviceImpl * snpDeviceImpl::create(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
-{
-	snpDeviceImpl *device = (m_exists != true) ? new snpDeviceImpl() : nullptr;
-	if (device != nullptr && device->init(cellSize, cellsPerPU, numberOfPU) != true)
-	{
-		delete device;
-		device = nullptr;
-	}
-	return device;
-}
-
-snpDeviceImpl::snpDeviceImpl()
-	: m_cellSize(0)
-	, m_cellsPerPU(0)
-	, m_numberOfPU(0)
-	, d_memory(nullptr)
-	, d_instruction(nullptr)
-	, d_output(nullptr)
-	, h_output(nullptr)
-	, h_cell(nullptr)
-	, m_cellIndex(kCellNotFound)
-{
-	m_exists = true;
-}
-
-snpDeviceImpl::~snpDeviceImpl()
-{
-	snpCudaSafeCall(cudaFree(d_memory));
-	snpCudaSafeCall(cudaFree(d_instruction));
-	snpCudaSafeCall(cudaFree(d_output));
-	snpCudaSafeCall(cudaDeviceReset());
-
-	delete h_output;
-	delete h_cell;
-
-	m_exists = false;
 }
 
 bool snpDeviceImpl::init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
