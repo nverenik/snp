@@ -5,6 +5,8 @@
 *.vcxproj.user
 *.pdb
 *.log
-Debug/
-Release/
+Debug-GPU/
+Debug-RocksDB/
+Release-GPU/
+Release-RocksDB/
 ipch/

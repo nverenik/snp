@@ -19,7 +19,7 @@ int main()
 		// as it wasn't configured the releasing must be failed
 		snpErrorCode result3 = device2.end();
 
-		// must be suceeded
+		// must be succeeded
 		snpErrorCode result4 = device1.end();
 
 		// initialization must be okay now
@@ -38,7 +38,7 @@ int main()
 	// address all cells at once (mask doesn't cover any of bits)
 	snpBitfieldSet(instruction.field.addressMask.raw, 0);
 	snpBitfieldSet(instruction.field.addressData.raw, 0);
-	// write '1'-'2'-'3' to the first three integers and random value to the last one
+	// write constant values to the cells
 	snpBitfieldSet(instruction.field.dataMask.raw, ~0);
 	instruction.field.dataData.raw[0] = 1;
 	instruction.field.dataData.raw[1] = 2;
@@ -48,7 +48,7 @@ int main()
 	device.exec(false, snpAssign, instruction);
 	device.dump();
 
-	// for now all cells must have the same values outside of the last integer
+	// for now all cells must have the same value
 	// let read them all using the first cell as flag
 	instruction.field.addressMask.raw[0] = ~0;
 	instruction.field.addressData.raw[0] = 1;

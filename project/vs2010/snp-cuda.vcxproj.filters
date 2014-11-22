@@ -35,8 +35,17 @@
     <ClInclude Include="..\..\include\snp-cuda\snpOperation.h">
       <Filter>include\snp-cuda</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\snp-cuda\snpBackendConfig.h">
+      <Filter>include\snp-cuda</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\source\snpDeviceGPU.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\snpDeviceRocksDB.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\source\snpDevice.cpp">
       <Filter>source</Filter>
     </ClCompile>
