@@ -46,9 +46,11 @@ public:
 	snpErrorCode configure(uint32 cellsPerPU, uint32 numberOfPU);
 	snpErrorCode end();
 
-	inline uint16 getCellSize() const	{ return s_cellSize; }
-    inline uint32 getCellsPerPU() const;
-    inline uint32 getNumberOfPU() const;
+	inline bool isReady() const { return m_device != nullptr; }
+
+	uint16 getCellSize() const;
+	uint32 getCellsPerPU() const;
+	uint32 getNumberOfPU() const;
 
 	// Execute instruction on device. Returns True if at least one cell activated.
 	bool exec(bool singleCell, snpOperation operation, const snpInstruction &instruction, snpErrorCode *error = nullptr);
@@ -190,13 +192,19 @@ bool snpDevice<bitwidth>::dump()
 }
 
 template<uint16 bitwidth>
-inline uint32 snpDevice<bitwidth>::getCellsPerPU() const
+uint16 snpDevice<bitwidth>::getCellSize() const
+{
+    return s_cellSize;
+}
+
+template<uint16 bitwidth>
+uint32 snpDevice<bitwidth>::getCellsPerPU() const
 {
     return (m_device != nullptr) ? m_device->getCellsPerPU() : 0;
 }
 
 template<uint16 bitwidth>
-inline uint32 snpDevice<bitwidth>::getNumberOfPU() const
+uint32 snpDevice<bitwidth>::getNumberOfPU() const
 {
     return (m_device != nullptr) ? m_device->getNumberOfPU() : 0;
 }
