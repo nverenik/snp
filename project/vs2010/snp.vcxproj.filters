@@ -1,11 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <CudaCompile Include="..\..\source\kernel.cu">
-      <Filter>source</Filter>
-    </CudaCompile>
-  </ItemGroup>
-  <ItemGroup>
     <Filter Include="include">
       <UniqueIdentifier>{5d39f50e-d90d-4f76-b09c-70aeadda8d32}</UniqueIdentifier>
     </Filter>
@@ -40,14 +35,19 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\source\snpDeviceGPU.cpp">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\source\snpDeviceRocksDB.cpp">
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\snpDevice.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\snpDeviceCUDA.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\source\kernel.cu">
+      <Filter>source</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

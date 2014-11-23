@@ -1,6 +1,6 @@
 #include <snp\snpDevice.h>
 
-#if (SNP_TARGET_BACKEND == SNP_BACKEND_GPU)
+#if (SNP_TARGET_BACKEND == SNP_BACKEND_CUDA)
 
 #include "cuda_runtime.h"
 #include "kernel.h"
@@ -128,4 +128,4 @@ void snpDeviceImpl::dump()
 
 NS_SNP_END
 
-#endif //(SNP_TARGET_BACKEND == SNP_BACKEND_GPU)
+#endif //(SNP_TARGET_BACKEND == SNP_BACKEND_CUDA)

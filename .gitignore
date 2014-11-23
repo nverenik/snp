@@ -19,3 +19,6 @@
 *.exe
 *.out
 *.app
+
+# CUDA temporary files
+*.cu.deps

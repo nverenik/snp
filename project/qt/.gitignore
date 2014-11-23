@@ -1,0 +1,6 @@
+# Qt Creator temporary files
+*.pro.user
+Debug-CUDA/
+Debug-RocksDB/
+Release-CUDA/
+Release-RocksDB/

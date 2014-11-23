@@ -84,7 +84,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;SNP_TARGET_GPU;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;SNP_TARGET_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -119,7 +119,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;SNP_TARGET_GPU;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;SNP_TARGET_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -155,21 +155,27 @@ copy "$(OutDir)*.lib" "$(SolutionDir)..\..\prebuilt\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\source\kernel.cu" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\..\include\snp\snp.h" />
     <ClInclude Include="..\..\include\snp\snpBackendConfig.h" />
     <ClInclude Include="..\..\include\snp\snpDevice.h" />
     <ClInclude Include="..\..\include\snp\snpErrorCode.h" />
     <ClInclude Include="..\..\include\snp\snpMacros.h" />
     <ClInclude Include="..\..\include\snp\snpOperation.h" />
-    <ClInclude Include="..\..\source\kernel.h" />
+    <ClInclude Include="..\..\source\kernel.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug-RocksDB|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release-RocksDB|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\snpDevice.cpp" />
-    <ClCompile Include="..\..\source\snpDeviceGPU.cpp" />
+    <ClCompile Include="..\..\source\snpDeviceCUDA.cpp" />
     <ClCompile Include="..\..\source\snpDeviceRocksDB.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\source\kernel.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug-RocksDB|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release-RocksDB|Win32'">true</ExcludedFromBuild>
+    </CudaCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
