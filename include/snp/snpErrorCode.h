@@ -10,7 +10,8 @@ class snpErrorCode
 public:
 	typedef enum
 	{
-		SUCCEEDED = 0,
+        UNDEFINED = 0,
+        SUCCEEDED,
 
 		DEVICE_ALREADY_CONFIGURED,
 		DEVICE_NOT_CONFIGURED,
@@ -22,7 +23,7 @@ private:
 	enum_type m_value;
 
 public:
-	snpErrorCode(enum_type value)
+    snpErrorCode(enum_type value = UNDEFINED)
 		: m_value(value)
 	{
 		// don't forget to update assert

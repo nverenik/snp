@@ -40,11 +40,11 @@ NS_SNP_BEGIN
 
 bool snpDeviceImpl::init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
 {
-	//, d_memory(nullptr)
-	//, d_instruction(nullptr)
-	//, d_output(nullptr)
-	//, h_output(nullptr)
-	//, h_cell(nullptr)
+    d_memory = nullptr;
+    d_instruction = nullptr;
+    d_output = nullptr;
+    h_output = nullptr;
+    h_cell = nullptr;
 
 	m_cellSize = cellSize;
 	m_cellsPerPU = cellsPerPU;
