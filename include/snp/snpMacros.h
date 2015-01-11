@@ -28,8 +28,13 @@ typedef signed int int32;
 typedef float float32;
 typedef double float64;
 
+#ifndef MIN
 #define MIN(__x__, __y__) (((__x__) < (__y__)) ? (__x__) : (__y__))
+#endif // MIN
+
+#ifndef MAX
 #define MAX(__x__, __y__) (((__x__) > (__y__)) ? (__x__) : (__y__))
+#endif // MAX
 
 #define snpBit(__x__) (1 << (__x__))
 
