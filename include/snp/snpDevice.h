@@ -1,10 +1,9 @@
 #ifndef __SNP_DEVICE_H__
 #define __SNP_DEVICE_H__
 
-#include <snp\snpBackendConfig.h>
-#include <snp\snpMacros.h>
-#include <snp\snpErrorCode.h>
-#include <snp\snpOperation.h>
+#include <snp/snpMacros.h>
+#include <snp/snpErrorCode.h>
+#include <snp/snpOperation.h>
 
 NS_SNP_BEGIN
 
@@ -92,17 +91,7 @@ private:
 	template<uint16 bitwidth>
 	friend class snpDevice;
 
-	static bool m_exists;
-
-#if (SNP_TARGET_BACKEND == SNP_BACKEND_CUDA)
-	uint32	*d_memory;
-	uint32	*d_instruction;
-	int32	*d_output;
-
-	int32	*h_output;
-	uint32	*h_cell;
-#endif //(SNP_TARGET_BACKEND == SNP_BACKEND_CUDA)
-	
+	static bool m_exists;	
 };
 
 template<uint16 bitwidth>

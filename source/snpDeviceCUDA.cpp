@@ -1,4 +1,5 @@
 #include <snp\snpDevice.h>
+#include "snpBackendConfig.h"
 
 #if (SNP_TARGET_BACKEND == SNP_BACKEND_CUDA)
 
@@ -38,6 +39,13 @@ NS_SNP_BEGIN
 	} \
 }
 
+static uint32	*d_memory;
+static uint32	*d_instruction;
+static int32	*d_output;
+
+static int32	*h_output;
+static uint32	*h_cell;
+
 bool snpDeviceImpl::init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
 {
     d_memory = nullptr;
@@ -49,6 +57,7 @@ bool snpDeviceImpl::init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
 	m_cellSize = cellSize;
 	m_cellsPerPU = cellsPerPU;
 	m_numberOfPU = numberOfPU;
+    m_cellIndex = kCellNotFound;
 
 	do
 	{

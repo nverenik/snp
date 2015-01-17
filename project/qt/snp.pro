@@ -19,12 +19,16 @@ ConfigCUDA {
 ConfigRocksDB {
     TARGET = $$join(TARGET,,,.rocksdb)
     DEFINES += SNP_TARGET_ROCKS_DB
+
+    INCLUDEPATH += \
+        ../../external/rocksdb-3.8/include
+
+    LIBS += -L../../external/rocksdb-3.8/bin -lrocksdb
 }
 
 CONFIG(debug, debug|release) {
-     TARGET = $$join(TARGET,,,.debug)
+    TARGET = $$join(TARGET,,,.debug)
 }
-
 
 INCLUDEPATH += \
     ../../include \
@@ -32,11 +36,11 @@ INCLUDEPATH += \
 
 HEADERS += \
     ../../include/snp/snp.h \
-    ../../include/snp/snpBackendConfig.h \
     ../../include/snp/snpDevice.h \
     ../../include/snp/snpErrorCode.h \
     ../../include/snp/snpMacros.h \
-    ../../include/snp/snpOperation.h
+    ../../include/snp/snpOperation.h \
+    ../../source/snpBackendConfig.h
 
 SOURCES += \
     ../../source/snpDevice.cpp \

@@ -94,7 +94,9 @@
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
-copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
+copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
+copy "$(OutDir)*.dll" "$(SolutionDir)..\..\prebuilt\"
+copy "$(OutDir)*.lib" "$(SolutionDir)..\..\prebuilt\"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <AdditionalDeps>
@@ -110,8 +112,15 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;SNP_TARGET_ROCKS_DB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\source;$(ProjectDir)..\..\external\rocksdb-3.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <PostBuildEvent>
+      <Command>echo copy "$(OutDir)*.dll" "$(SolutionDir)..\..\prebuilt\"
+copy "$(OutDir)*.lib" "$(SolutionDir)..\..\prebuilt\"</Command>
+    </PostBuildEvent>
+    <CudaLink>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\external\rocksdb-3.8\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-CUDA|Win32'">
     <ClCompile>
@@ -147,12 +156,15 @@ copy "$(OutDir)*.lib" "$(SolutionDir)..\..\prebuilt\"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;SNP_TARGET_ROCKS_DB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\source;$(ProjectDir)..\..\external\rocksdb-3.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)*.dll" "$(SolutionDir)..\..\prebuilt\"
+      <Command>echo copy "$(OutDir)*.dll" "$(SolutionDir)..\..\prebuilt\"
 copy "$(OutDir)*.lib" "$(SolutionDir)..\..\prebuilt\"</Command>
     </PostBuildEvent>
+    <CudaLink>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\external\rocksdb-3.8\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\snp\snp.h" />
