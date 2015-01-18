@@ -27,11 +27,11 @@
     <ClInclude Include="..\..\include\snp\snpOperation.h">
       <Filter>include\snp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\snp\snpBackendConfig.h">
-      <Filter>include\snp</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\snp\snp.h">
       <Filter>include\snp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\snpBackendConfig.h">
+      <Filter>source</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -6,6 +6,8 @@
 #include "cuda_runtime.h"
 #include "kernel.h"
 
+#include <string>
+
 NS_SNP_BEGIN
 
 #define snpBreakIf(__statement__, __message__) { \
@@ -46,8 +48,96 @@ static int32	*d_output;
 static int32	*h_output;
 static uint32	*h_cell;
 
+bool CheckResourceSufficiency(int iCellSize, int iNumCellsPerPU, int iNumPUs)
+{
+	int iDeviceCount;
+	cudaGetDeviceCount(&iDeviceCount);
+
+	struct cudaDeviceProp oDeviceProp;
+	cudaGetDeviceProperties(&oDeviceProp, 0); // We assume that system has similar devices
+
+	// Check threads
+	int iMaxThreads = iDeviceCount * oDeviceProp.maxGridSize[0] * oDeviceProp.maxThreadsDim[0];
+	if(iMaxThreads < iNumPUs)
+	{
+		printf("Threads check failed");
+		return false;
+	}
+
+	// Check memory
+	unsigned long iTotalGlobalMemory = iDeviceCount * oDeviceProp.totalGlobalMem;
+	unsigned long iRequiredMemory = ( iCellSize * iNumCellsPerPU * iNumPUs * sizeof(int) ) + ( 4 * iCellSize * sizeof(int) ) + ( iNumPUs * sizeof(int) );
+
+	if(iTotalGlobalMemory < iRequiredMemory)
+	{
+		printf("Memory check failed");
+		return false;
+	}
+
+	return true;
+}
+
+bool snpDeviceImpl::systemInfo()
+{
+	int iDeviceCount;
+	cudaGetDeviceCount(&iDeviceCount);
+
+	struct cudaDeviceProp oDeviceProp;
+	std::string sDeviceName;
+	for (int iDevice = 0; iDevice < iDeviceCount; iDevice++)
+	{
+		cudaGetDeviceProperties(&oDeviceProp, iDevice);
+
+		if(!sDeviceName.empty() && sDeviceName != (std::string)oDeviceProp.name)
+			return false;
+
+		sDeviceName = oDeviceProp.name;
+	}
+
+	// System properties:
+	printf("Device count: %d\n", iDeviceCount);
+	printf("\n");
+
+	// General
+	printf("Device name: %s\n", oDeviceProp.name);
+	printf("Clock rate: %d\n", oDeviceProp.clockRate);
+	printf("\n");
+
+	// Computing
+	printf("Multiprocessor count: %d\n", oDeviceProp.multiProcessorCount);
+	printf("Max Threads per Multiprocessor: %d\n", oDeviceProp.maxThreadsPerMultiProcessor);
+	printf("Max grid size (x;y;z): (%d;%d;%d)\n",
+		oDeviceProp.maxGridSize[0],
+		oDeviceProp.maxGridSize[1],
+		oDeviceProp.maxGridSize[2]);
+	printf("Max block size (x;y;z): (%d;%d;%d)\n",
+		oDeviceProp.maxThreadsDim[0],
+		oDeviceProp.maxThreadsDim[1],
+		oDeviceProp.maxThreadsDim[2]);
+	printf("Warp size: %d\n", oDeviceProp.warpSize);
+	printf("\n");
+
+	// Memory
+	printf("Total global memory: %d\n", oDeviceProp.totalGlobalMem);
+	printf("Total constant memory: %d\n", oDeviceProp.totalConstMem);
+	printf("Shared memory per block: %d\n", oDeviceProp.sharedMemPerBlock);
+	printf("Registers per block: %d\n", oDeviceProp.regsPerBlock);
+	printf("\n");
+
+	// Recommendations
+	printf("Min threads: %d\n", iDeviceCount * oDeviceProp.multiProcessorCount * oDeviceProp.maxThreadsPerMultiProcessor);	// Num of threads that may run at once
+	printf("Max threads: %d\n", iDeviceCount * oDeviceProp.maxGridSize[0] * oDeviceProp.maxThreadsDim[0]);					// Logical limit
+	printf("Memory for Min: %d\n", oDeviceProp.totalGlobalMem / (oDeviceProp.multiProcessorCount * oDeviceProp.maxThreadsPerMultiProcessor));
+	printf("Memory for Max: %d\n", oDeviceProp.totalGlobalMem / (oDeviceProp.maxGridSize[0] * oDeviceProp.maxThreadsDim[0]));
+
+	return true;
+}
+
 bool snpDeviceImpl::init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
 {
+	if (!CheckResourceSufficiency(cellSize, cellsPerPU, numberOfPU))
+		return false;
+
     d_memory = nullptr;
     d_instruction = nullptr;
     d_output = nullptr;

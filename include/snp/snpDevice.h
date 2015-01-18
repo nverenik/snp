@@ -42,6 +42,8 @@ public:
 	snpDevice();
 	~snpDevice();
 
+	static snpErrorCode systemInfo();
+
 	snpErrorCode configure(uint32 cellsPerPU, uint32 numberOfPU);
 	snpErrorCode end();
 
@@ -69,6 +71,8 @@ class snpDeviceImpl
 {
 private:
 	static snpDeviceImpl * create(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU);
+	static bool systemInfo();
+
 	snpDeviceImpl();
 	~snpDeviceImpl();
 
@@ -93,6 +97,13 @@ private:
 
 	static bool m_exists;	
 };
+
+template<uint16 bitwidth>
+snpErrorCode snpDevice<bitwidth>::systemInfo()
+{
+	snpDeviceImpl::systemInfo();
+	return snpErrorCode::SUCCEEDED;
+}
 
 template<uint16 bitwidth>
 snpDevice<bitwidth>::snpDevice()

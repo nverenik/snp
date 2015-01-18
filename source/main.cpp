@@ -26,7 +26,10 @@ int main()
 		snpErrorCode result5 = device2.configure(32, 32);
 	}
 
-	typedef snpDevice<128> Device;	
+	typedef snpDevice<128> Device;
+
+	Device::systemInfo();
+	printf("\n");
 
 	Device device;
 	// must be configured successfully as previous device was

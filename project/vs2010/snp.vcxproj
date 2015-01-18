@@ -168,7 +168,6 @@ copy "$(OutDir)*.lib" "$(SolutionDir)..\..\prebuilt\"</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\snp\snp.h" />
-    <ClInclude Include="..\..\include\snp\snpBackendConfig.h" />
     <ClInclude Include="..\..\include\snp\snpDevice.h" />
     <ClInclude Include="..\..\include\snp\snpErrorCode.h" />
     <ClInclude Include="..\..\include\snp\snpMacros.h" />
@@ -177,6 +176,7 @@ copy "$(OutDir)*.lib" "$(SolutionDir)..\..\prebuilt\"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug-RocksDB|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release-RocksDB|Win32'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="..\..\source\snpBackendConfig.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\snpDevice.cpp" />

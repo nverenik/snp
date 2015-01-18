@@ -80,6 +80,12 @@ static const std::string kDatabasePath = "/tmp/rocksdb_table";
 
 static DB *s_database = nullptr;
 
+bool snpDeviceImpl::systemInfo()
+{
+	printf("snpDeviceImpl::systemInfo() - not implemented for RocksDB backend\n");
+	return true;
+}
+
 bool snpDeviceImpl::init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
 {
     // setup device settings
