@@ -90,7 +90,6 @@ private:
 	uint32	m_cellSize;
 	uint32	m_cellsPerPU;
 	uint32	m_numberOfPU;
-	int32	m_cellIndex;
 
 	template<uint16 bitwidth>
 	friend class snpDevice;

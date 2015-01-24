@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="tclap">
+      <UniqueIdentifier>{34697c69-4fd4-491b-b88d-f2c20309f8e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tclap\include">
+      <UniqueIdentifier>{56d4256e-4437-4024-ac5f-56133638935f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tclap\include\tclap">
+      <UniqueIdentifier>{f4dbb80c-096c-4340-bbaa-831022186e6e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="snpworker">
+      <UniqueIdentifier>{affcfcf4-6ae6-4fdf-8b50-772a780bbafa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{db1b0683-2831-4749-9654-23bc9cd8da99}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\snp">
+      <UniqueIdentifier>{9bc4f231-0468-43c4-aa7b-c269dff6bcb1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\Arg.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ArgException.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ArgTraits.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\CmdLine.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\CmdLineInterface.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\CmdLineOutput.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\Constraint.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\DocBookOutput.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\HelpVisitor.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\IgnoreRestVisitor.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\MultiArg.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\MultiSwitchArg.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\OptionalUnlabeledTracker.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\StandardTraits.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\StdOutput.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\SwitchArg.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\UnlabeledMultiArg.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\UnlabeledValueArg.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ValueArg.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ValuesConstraint.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\VersionVisitor.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\Visitor.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\XorHandler.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ZshCompletionOutput.h">
+      <Filter>tclap\include\tclap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\snpworker\kernel.h">
+      <Filter>snpworker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\snpworker\snpCommand.h">
+      <Filter>snpworker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\snp\snp.h">
+      <Filter>include\snp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\snp\snpDevice.h">
+      <Filter>include\snp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\snp\snpErrorCode.h">
+      <Filter>include\snp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\snp\snpMacros.h">
+      <Filter>include\snp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\snp\snpOperation.h">
+      <Filter>include\snp</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\source\mpicuda\snpworker\kernel.cu">
+      <Filter>snpworker</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\source\mpicuda\snpworker\main.cpp">
+      <Filter>snpworker</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

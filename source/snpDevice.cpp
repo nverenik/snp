@@ -22,7 +22,6 @@ snpDeviceImpl::snpDeviceImpl()
 	: m_cellSize(0)
 	, m_cellsPerPU(0)
 	, m_numberOfPU(0)
-	, m_cellIndex(kCellNotFound)
 {
 	m_exists = true;
 }
