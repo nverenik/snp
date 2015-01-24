@@ -17,7 +17,7 @@ NS_SNP_BEGIN
 enum snpCommand
 {
 	Undefined	= -1,
-	SYSTEM_INFO	= 0,
+	SYSTEM_INFO	= 0,	// for now without this command
 	STARTUP		= 1,
 	SHUTDOWN	= 2,
 	EXEC		= 3,

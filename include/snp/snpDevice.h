@@ -13,6 +13,7 @@ template<uint16 bitwidth>
 class snpDevice
 {
 private:
+	// TODO: change round to ceil method
     static const uint16 s_cellSize = static_cast<uint16>(bitwidth / (sizeof(uint32) * 8) + 0.5f);
 
 public:

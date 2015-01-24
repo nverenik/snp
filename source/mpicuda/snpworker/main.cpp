@@ -11,18 +11,20 @@ using snp::snpCommand;
 
 struct Config;
 struct DeviceInfo;
+struct DeviceConfiguration;
 
 typedef std::vector<DeviceInfo> SystemInfo;
+typedef std::vector<DeviceConfiguration> SystemConfiguration;
 
 static void OnExit();
-static bool ProcessCommandLine(int argc, char* argv[], Config &roConfig);
-static bool GetSystemInfo(int iRank, SystemInfo &roSystemInfo);
+static bool ProcessCommandLine(int32 argc, char* argv[], Config &roConfig);
+static bool GetSystemInfo(int32 iRank, SystemInfo &roSystemInfo);
 static void PrintSystemInfo(const SystemInfo &roSystemInfo);
-static void RunLoop(int iRank, const SystemInfo &roSystemInfo);
+static void RunLoop(int32 iRank, const SystemInfo &roSystemInfo);
 
 // snp commands implementation
 static bool SendSystemInfo(const SystemInfo &roSystemInfo);
-static bool Startup();
+static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU);
 static bool Shutdown();
 static bool Exec();
 static bool Read();
@@ -35,13 +37,35 @@ struct Config
 
 struct DeviceInfo
 {
-	int				m_iNodeRank;
+	int32			m_iNodeRank;
 	cudaDeviceProp	m_oProperties;
 };
 
-static const int	s_iMpiHostRank = 0;
-static int			s_iMpiRank = -1;
+struct DeviceConfiguration
+{
+	uint32	m_uiGridDim;	// number of blocks (1 .. 65536) within grid
+	uint32	m_uiBlockDim;	// number of threads (1 .. 1024) within block
+	uint32	m_uiThreadDim;	// number of cells within thread
+	uint32	m_uiCellDim;	// number of uint32 within cell
+};
+
+static const int32	s_iMpiHostRank	= 0;
+static int32		s_iMpiRank		= -1;
 static char			s_pszProcessorName[MPI_MAX_PROCESSOR_NAME];
+
+static SystemInfo			s_oNodeInfo;			// info about all available devices in the current node
+static SystemConfiguration	s_oNodeConfiguration;	// configuration for each device in the current node
+
+// pointers to the memory allocated on device
+static std::vector<uint32 *>	d_aMemory;
+static std::vector<uint32 *>	d_aInstruction;
+static std::vector<uint32 *>	d_aOutput;
+
+// pre-allocated buffers used when working with kernel
+static std::vector<int32 *>		h_aOutput;
+static std::vector<uint32 *>	h_aCell;
+
+//static uint32	s_cellIndex	= 0;
 
 #define MPI_LOG(__format__, ...) printf("[%d:%s] "__format__"\n", s_iMpiRank, s_pszProcessorName, ##__VA_ARGS__)
 
@@ -52,7 +76,7 @@ int main(int argc, char* argv[])
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &s_iMpiRank);
 
-	int iLength = 0;
+	int32 iLength = 0;
 	MPI_Get_processor_name(s_pszProcessorName, &iLength);
 
 	Config oConfig;
@@ -73,7 +97,8 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	RunLoop(s_iMpiRank, oSystemInfo);
+	Startup(s_iMpiRank, oSystemInfo, 9, 32, 10000);
+	//RunLoop(s_iMpiRank, oSystemInfo);
 
 	// MPI_Finalize() is called using atexit callback
 	return 0;
@@ -108,30 +133,30 @@ static bool ProcessCommandLine(int argc, char* argv[], Config &roConfig)
 	return true;
 }
 
-static bool GetSystemInfo(int iRank, SystemInfo &roSystemInfo)
+static bool GetSystemInfo(int32 iRank, SystemInfo &roSystemInfo)
 {
 	// at first collect info about all available GPUs
 
 	// host worker collect total number of available devices
 	// prepare buffer for receiving
-	int iNodeCount = 0;
+	int32 iNodeCount = 0;
 	MPI_Comm_size(MPI_COMM_WORLD, &iNodeCount);
 
-	std::vector<int> aDeviceCount;
+	std::vector<int32> aDeviceCount;
 	aDeviceCount.resize(iNodeCount);
 
 	// get number of available devices for the current node
-	int iDeviceCount = 0;
+	int32 iDeviceCount = 0;
 	cudaError_t eErrorCode = cudaGetDeviceCount(&iDeviceCount);
 	if (eErrorCode != cudaSuccess)
-		MPI_LOG("%s", cudaGetErrorString(eErrorCode));
+		MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
 	else
-		MPI_LOG("number of devices: %d", iDeviceCount);
+		MPI_LOG("Number of devices: %d", iDeviceCount);
 
 	MPI_Allgather(&iDeviceCount, 1, MPI_INT, &aDeviceCount.front(), 1, MPI_INT, MPI_COMM_WORLD);
 
 	// there're no devices on this or some else node
-	for (int iNodeIndex = 0; iNodeIndex < iNodeCount; iNodeIndex++)
+	for (int32 iNodeIndex = 0; iNodeIndex < iNodeCount; iNodeIndex++)
 	{
 		// TODO: node without devices sends message to host to be deleted from
 		// communication group
@@ -142,26 +167,27 @@ static bool GetSystemInfo(int iRank, SystemInfo &roSystemInfo)
 	if (iRank == s_iMpiHostRank)
 	{
 		// find the total number of devices to prepare receiver buffer
-		int iDeviceCountTotal = 0;
-		for (int iNodeIndex = 0; iNodeIndex < aDeviceCount.size(); iNodeIndex++)
+		uint32 iDeviceCountTotal = 0;
+		for (int32 iNodeIndex = 0; iNodeIndex < aDeviceCount.size(); iNodeIndex++)
 			iDeviceCountTotal += aDeviceCount[iNodeIndex];
 
-		MPI_LOG("Total number of devices: %d", iDeviceCountTotal);
+		MPI_LOG("Total number of devices: %u", iDeviceCountTotal);
 		roSystemInfo.resize(iDeviceCountTotal);
 	}
 
 	// prepare data to send (it includes the host as well)
-	SystemInfo oNodeInfo;
+	s_oNodeInfo.clear();
+
 	// for each found GPU device create info element
-	for (int iIndex = 0; iIndex < iDeviceCount; iIndex++)
+	for (int32 iIndex = 0; iIndex < iDeviceCount; iIndex++)
 	{
-		oNodeInfo.push_back(DeviceInfo());
-		DeviceInfo *pDeviceInfo = &oNodeInfo[iIndex];
+		s_oNodeInfo.push_back(DeviceInfo());
+		DeviceInfo *pDeviceInfo = &s_oNodeInfo[iIndex];
 
 		pDeviceInfo->m_iNodeRank = iRank;
 		cudaError_t eErrorCode = cudaGetDeviceProperties(&pDeviceInfo->m_oProperties, iIndex);
 		if (eErrorCode != cudaSuccess)
-			MPI_LOG("%s", cudaGetErrorString(eErrorCode));
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
 	}
 
 	// threat device info struct as raw array of bytes
@@ -170,7 +196,7 @@ static bool GetSystemInfo(int iRank, SystemInfo &roSystemInfo)
 	MPI_Type_commit(&iDeviceInfoType);
 
 	// collect all info on the host
-	MPI_Gather(&oNodeInfo.front(), int(oNodeInfo.size()), iDeviceInfoType, &roSystemInfo.front(), int(oNodeInfo.size()), iDeviceInfoType, s_iMpiHostRank, MPI_COMM_WORLD);
+	MPI_Gather(&s_oNodeInfo.front(), int32(s_oNodeInfo.size()), iDeviceInfoType, &roSystemInfo.front(), int32(s_oNodeInfo.size()), iDeviceInfoType, s_iMpiHostRank, MPI_COMM_WORLD);
 	MPI_Type_free(&iDeviceInfoType);
 
 	return true;
@@ -178,8 +204,8 @@ static bool GetSystemInfo(int iRank, SystemInfo &roSystemInfo)
 
 static void PrintSystemInfo(const SystemInfo &roSystemInfo)
 {
-	int iNodeRank = -1;
-	for (int iDeviceIndex = 0; iDeviceIndex < roSystemInfo.size(); iDeviceIndex++)
+	int32 iNodeRank = -1;
+	for (int32 iDeviceIndex = 0; iDeviceIndex < roSystemInfo.size(); iDeviceIndex++)
 	{
 		const DeviceInfo &roDeviceInfo = roSystemInfo[iDeviceIndex];
 		if (roDeviceInfo.m_iNodeRank != iNodeRank)
@@ -230,7 +256,7 @@ static void PrintSystemInfo(const SystemInfo &roSystemInfo)
 	//printf("   Memory for Max: %d\n", roDeviceProps.totalGlobalMem / (roDeviceProps.maxGridSize[0] * roDeviceProps.maxThreadsDim[0]));
 }
 
-static void RunLoop(int iRank, const SystemInfo &roSystemInfo)
+static void RunLoop(int32 iRank, const SystemInfo &roSystemInfo)
 {
 	MPI_LOG("Process started...");
 	while(true)
@@ -258,7 +284,7 @@ static void RunLoop(int iRank, const SystemInfo &roSystemInfo)
 		// perform command 
 		switch(eCommand)
 		{
-			case snp::STARTUP:		Startup();		break;
+			case snp::STARTUP:		Startup(iRank, roSystemInfo, 9, 32, 32); break;	// TODO: check double call before broadcasting startup command
 			case snp::SHUTDOWN:		Shutdown();		break;
 			case snp::EXEC:			Exec();			break;
 			case snp::READ:			Read();			break;
@@ -274,12 +300,113 @@ static void RunLoop(int iRank, const SystemInfo &roSystemInfo)
 
 static bool SendSystemInfo(const SystemInfo &roSystemInfo)
 {
+	// TODO: send system info to the main process
+	// for now this command is not used
 	return false;
 }
 
-static bool Startup()
+static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU)
 {
-	return false;
+	assert(!d_aMemory.size());
+	assert(!d_aInstruction.size());
+	assert(!d_aOutput.size());
+
+	// Find the configuration for GPUs
+	SystemConfiguration oSystemConfiguration;
+
+	// (!)Assume that each device (GPU) is used maximum only by only one node
+	if (iRank == s_iMpiHostRank)
+	{
+		// 1. number of blocks is multiple of multiprocessors amount
+		// 2. as number of threads per block use the maximum
+		uint32 uiNumberOfThreadsPerIteration = 0;
+		for (int32 iDeviceIndex = 0; iDeviceIndex < roSystemInfo.size(); iDeviceIndex++)
+		{
+			// for each iteration add number of threads equals to what we obtain if add
+			// 1 block for each multi processor and use maximum threads in this block
+			uiNumberOfThreadsPerIteration += 
+				roSystemInfo[iDeviceIndex].m_oProperties.multiProcessorCount *
+				roSystemInfo[iDeviceIndex].m_oProperties.maxThreadsDim[0];
+		}
+
+		// find the minimum configuration which covers requested memory volume
+		uint32 uiMultiplier = ceilf((float)uiNumberOfPU / uiNumberOfThreadsPerIteration);
+		for (int32 iDeviceIndex = 0; iDeviceIndex < roSystemInfo.size(); iDeviceIndex++)
+		{
+			oSystemConfiguration.push_back(DeviceConfiguration());
+			DeviceConfiguration *pDeviceConfiguration = &oSystemConfiguration[iDeviceIndex];
+
+			pDeviceConfiguration->m_uiCellDim = uiCellSize;
+			pDeviceConfiguration->m_uiThreadDim = uiCellsPerPU;
+			pDeviceConfiguration->m_uiBlockDim = roSystemInfo[iDeviceIndex].m_oProperties.maxThreadsDim[0];
+			pDeviceConfiguration->m_uiGridDim = roSystemInfo[iDeviceIndex].m_oProperties.multiProcessorCount * uiMultiplier;
+		}
+	}
+
+	// send configurations to each process
+	s_oNodeConfiguration.clear();
+	s_oNodeConfiguration.resize(s_oNodeInfo.size());
+
+	// threat device info struct as raw array of bytes
+	MPI_Datatype iDeviceConfigurationType;
+	MPI_Type_contiguous(sizeof(DeviceConfiguration), MPI_BYTE, &iDeviceConfigurationType);
+	MPI_Type_commit(&iDeviceConfigurationType);
+
+	// collect all info on the host
+	MPI_Scatter(&oSystemConfiguration.front(), int32(oSystemConfiguration.size()), iDeviceConfigurationType,
+		&s_oNodeConfiguration.front(), int32(s_oNodeConfiguration.size()), iDeviceConfigurationType, s_iMpiHostRank, MPI_COMM_WORLD);
+	MPI_Type_free(&iDeviceConfigurationType);
+
+	// allocate processor memory separately for each GPU
+	d_aMemory.resize(s_oNodeInfo.size());
+	d_aInstruction.resize(s_oNodeInfo.size());
+	d_aOutput.resize(s_oNodeInfo.size());
+
+	cudaError_t eErrorCode = cudaSuccess;
+	for (int32 iDeviceIndex = 0; iDeviceIndex < s_oNodeConfiguration.size(); iDeviceIndex++)
+	{
+		cudaSetDevice(iDeviceIndex);
+		const DeviceConfiguration &oDeviceConfiguration = s_oNodeConfiguration[iDeviceIndex];
+		const uint32 uiMemorySize =
+			oDeviceConfiguration.m_uiCellDim *
+			oDeviceConfiguration.m_uiThreadDim *
+			oDeviceConfiguration.m_uiBlockDim *
+			oDeviceConfiguration.m_uiGridDim;
+
+		MPI_LOG("Configure device #%d", iDeviceIndex);
+		MPI_LOG("   Cell dim = %u", oDeviceConfiguration.m_uiCellDim);
+		MPI_LOG("   Thread dim = %u", oDeviceConfiguration.m_uiThreadDim);
+		MPI_LOG("   Block dim = %u", oDeviceConfiguration.m_uiBlockDim);
+		MPI_LOG("   Grid dim = %u", oDeviceConfiguration.m_uiGridDim);
+		MPI_LOG("Memory allocated = %u", uiMemorySize * sizeof(uint32));
+
+		eErrorCode = cudaMalloc((void**)&d_aMemory[iDeviceIndex], uiMemorySize * sizeof(uint32));
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+		// TODO: should we place instruction and output arrays into shared memory or something for speadup?
+		eErrorCode = cudaMalloc((void**)&d_aInstruction[iDeviceIndex], 4 * oDeviceConfiguration.m_uiCellDim * sizeof(uint32));
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+		eErrorCode = cudaMalloc((void**)&d_aOutput[iDeviceIndex], oDeviceConfiguration.m_uiBlockDim * oDeviceConfiguration.m_uiGridDim * sizeof(uint32));
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+	}
+
+	if (iRank == s_iMpiHostRank)
+	{
+		uint32 uiTotalNumberOfPU = 0;
+		for (int32 iDeviceIndex = 0; iDeviceIndex < oSystemConfiguration.size(); iDeviceIndex++)
+		{
+			uiTotalNumberOfPU +=
+				oSystemConfiguration[iDeviceIndex].m_uiBlockDim * 
+				oSystemConfiguration[iDeviceIndex].m_uiGridDim;
+		}
+		MPI_LOG("Total number of PU: %u", uiTotalNumberOfPU);
+	}
+
+	return true;
 }
 
 static bool Shutdown()
