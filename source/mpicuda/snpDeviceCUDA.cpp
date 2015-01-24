@@ -1,5 +1,5 @@
 #include <snp/snpDevice.h>
-#include <snpworker/snpCommand.h>
+#include "snpCommand.h"
 
 NS_SNP_BEGIN
 

@@ -43,13 +43,7 @@
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\Visitor.h" />
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\XorHandler.h" />
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ZshCompletionOutput.h" />
-    <ClInclude Include="..\..\include\snp\snp.h" />
-    <ClInclude Include="..\..\include\snp\snpDevice.h" />
-    <ClInclude Include="..\..\include\snp\snpErrorCode.h" />
-    <ClInclude Include="..\..\include\snp\snpMacros.h" />
-    <ClInclude Include="..\..\include\snp\snpOperation.h" />
     <ClInclude Include="..\..\source\mpicuda\snpworker\kernel.h" />
-    <ClInclude Include="..\..\source\mpicuda\snpworker\snpCommand.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\source\mpicuda\snpworker\kernel.cu" />

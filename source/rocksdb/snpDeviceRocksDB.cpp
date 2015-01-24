@@ -1,7 +1,4 @@
 #include <snp/snpDevice.h>
-#include "snpBackendConfig.h"
-
-#if (SNP_TARGET_BACKEND == SNP_BACKEND_ROCKS_DB)
 
 #include <cstdio>
 #include <iostream>
@@ -18,6 +15,7 @@
 #include <rocksdb/options.h>
 
 extern "C" const int32 kCellNotFound = -1;
+static int32 s_iCellIndex = kCellNotFound;
 
 inline static const std::string bitfield2string(const std::vector<uint32> &value)
 {
@@ -92,7 +90,7 @@ bool snpDeviceImpl::init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU)
     m_cellSize = cellSize;
     m_cellsPerPU = cellsPerPU;
     m_numberOfPU = numberOfPU;
-    m_cellIndex = kCellNotFound;
+    s_iCellIndex = kCellNotFound;
 
     // initialize database
     Options options;
@@ -183,14 +181,14 @@ bool snpDeviceImpl::exec(bool singleCell, snpOperation operation, const uint32 *
     Status dbStatus = s_database->Write(rocksdb::WriteOptions(), &batchOperation);
 
     // save first validated cell into buffer
-    m_cellIndex = (validatedPairs.size() > 0) ? std::stoul(validatedPairs.at(0).first) : kCellNotFound;
+    s_iCellIndex = (validatedPairs.size() > 0) ? std::stoul(validatedPairs.at(0).first) : kCellNotFound;
     return (dbStatus.ok() && (validatedPairs.size() > 0));
 }
 
 bool snpDeviceImpl::read(uint32 *bitfield)
 {
     std::string value;
-    Status dbStatus = s_database->Get(rocksdb::ReadOptions(), std::to_string(m_cellIndex), &value);
+    Status dbStatus = s_database->Get(rocksdb::ReadOptions(), std::to_string(s_iCellIndex), &value);
     if (dbStatus.ok())
     {
         vector<uint32> bfield = string2bitfield(value);
@@ -211,5 +209,3 @@ void snpDeviceImpl::dump()
 }
 
 NS_SNP_END
-
-#endif //(SNP_TARGET_BACKEND == SNP_BACKEND_ROCKS_DB)

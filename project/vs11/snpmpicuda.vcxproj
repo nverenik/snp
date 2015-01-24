@@ -16,7 +16,7 @@
     <ClInclude Include="..\..\include\snp\snpErrorCode.h" />
     <ClInclude Include="..\..\include\snp\snpMacros.h" />
     <ClInclude Include="..\..\include\snp\snpOperation.h" />
-    <ClInclude Include="..\..\source\mpicuda\snpworker\snpCommand.h" />
+    <ClInclude Include="..\..\source\mpicuda\snpCommand.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\mpicuda\snpDeviceCUDA.cpp" />
@@ -62,7 +62,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\source\mpicuda;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

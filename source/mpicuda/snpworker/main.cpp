@@ -4,7 +4,7 @@
 #include <mpi.h>
 #include <cuda_runtime.h>
 
-#include "snpCommand.h"
+#include "../snpCommand.h"
 using snp::snpCommand;
 
 #include <tclap/CmdLine.h>
