@@ -13,6 +13,9 @@
     <Filter Include="source\mpicuda">
       <UniqueIdentifier>{fb49ca24-3c7e-4e5f-a7b2-f9051d39f7d9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="source\mpicuda\snpworker">
+      <UniqueIdentifier>{0aaa09e9-e13f-473b-abe5-5c4dc4a7a8a0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\snp\snp.h">
@@ -29,6 +32,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\snp\snpOperation.h">
       <Filter>include\snp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\snpworker\snpCommand.h">
+      <Filter>source\mpicuda\snpworker</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

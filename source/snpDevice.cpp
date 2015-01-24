@@ -1,8 +1,6 @@
 #include <snp/snpDevice.h>
 extern "C" const int32 kCellNotFound;
 
-#include "snpBackendConfig.h"
-
 NS_SNP_BEGIN
 
 bool snpDeviceImpl::m_exists = false;

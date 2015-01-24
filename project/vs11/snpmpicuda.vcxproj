@@ -16,10 +16,16 @@
     <ClInclude Include="..\..\include\snp\snpErrorCode.h" />
     <ClInclude Include="..\..\include\snp\snpMacros.h" />
     <ClInclude Include="..\..\include\snp\snpOperation.h" />
+    <ClInclude Include="..\..\source\mpicuda\snpworker\snpCommand.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\mpicuda\snpDeviceCUDA.cpp" />
     <ClCompile Include="..\..\source\snpDevice.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="snpworker.vcxproj">
+      <Project>{da7c1049-1dc3-4949-a3a8-cdaa974c37f6}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{01638C36-E5A8-4182-9C34-0C006008DC53}</ProjectGuid>
@@ -56,6 +62,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\source\mpicuda;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -71,6 +78,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\source\mpicuda;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
