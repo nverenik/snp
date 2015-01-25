@@ -4,6 +4,9 @@
 #include <mpi.h>
 #include <cuda_runtime.h>
 
+#include <snp/snpOperation.h>
+using snp::snpOperation;
+
 #include "../snpCommand.h"
 using snp::snpCommand;
 
@@ -26,7 +29,7 @@ static void RunLoop(int32 iRank, const SystemInfo &roSystemInfo);
 static bool SendSystemInfo(const SystemInfo &roSystemInfo);
 static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU);
 static bool Shutdown();
-static bool Exec();
+static bool Exec(int32 iRank, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction);
 static bool Read();
 
 struct Config
@@ -98,6 +101,7 @@ int main(int argc, char* argv[])
 	}
 
 	Startup(s_iMpiRank, oSystemInfo, 9, 32, 10000);
+	Shutdown();
 	//RunLoop(s_iMpiRank, oSystemInfo);
 
 	// MPI_Finalize() is called using atexit callback
@@ -195,6 +199,7 @@ static bool GetSystemInfo(int32 iRank, SystemInfo &roSystemInfo)
 	MPI_Type_contiguous(sizeof(DeviceInfo), MPI_BYTE, &iDeviceInfoType);
 	MPI_Type_commit(&iDeviceInfoType);
 
+	// TODO: seems MPI_Gather do not allow to send data with different size, replace it with MPI_Send for each node
 	// collect all info on the host
 	MPI_Gather(&s_oNodeInfo.front(), int32(s_oNodeInfo.size()), iDeviceInfoType, &roSystemInfo.front(), int32(s_oNodeInfo.size()), iDeviceInfoType, s_iMpiHostRank, MPI_COMM_WORLD);
 	MPI_Type_free(&iDeviceInfoType);
@@ -258,7 +263,7 @@ static void PrintSystemInfo(const SystemInfo &roSystemInfo)
 
 static void RunLoop(int32 iRank, const SystemInfo &roSystemInfo)
 {
-	MPI_LOG("Process started...");
+	MPI_LOG("Process running...");
 	while(true)
 	{
 		snpCommand eCommand = snp::Undefined;
@@ -285,7 +290,7 @@ static void RunLoop(int32 iRank, const SystemInfo &roSystemInfo)
 		switch(eCommand)
 		{
 			case snp::STARTUP:		Startup(iRank, roSystemInfo, 9, 32, 32); break;	// TODO: check double call before broadcasting startup command
-			case snp::SHUTDOWN:		Shutdown();		break;
+			case snp::SHUTDOWN:		Shutdown();		break;	// TODO: check double call
 			case snp::EXEC:			Exec();			break;
 			case snp::READ:			Read();			break;
 
@@ -344,28 +349,37 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 	}
 
 	// send configurations to each process
+	const uint32 uiNumberOfLocalDevices = s_oNodeInfo.size();
+
 	s_oNodeConfiguration.clear();
-	s_oNodeConfiguration.resize(s_oNodeInfo.size());
+	s_oNodeConfiguration.resize(uiNumberOfLocalDevices);
 
 	// threat device info struct as raw array of bytes
 	MPI_Datatype iDeviceConfigurationType;
 	MPI_Type_contiguous(sizeof(DeviceConfiguration), MPI_BYTE, &iDeviceConfigurationType);
 	MPI_Type_commit(&iDeviceConfigurationType);
 
+	// TODO: seems MPI_Scatter do not allow to send data with different size, replace it with MPI_Send for each node
 	// collect all info on the host
 	MPI_Scatter(&oSystemConfiguration.front(), int32(oSystemConfiguration.size()), iDeviceConfigurationType,
-		&s_oNodeConfiguration.front(), int32(s_oNodeConfiguration.size()), iDeviceConfigurationType, s_iMpiHostRank, MPI_COMM_WORLD);
+		&s_oNodeConfiguration.front(), uiNumberOfLocalDevices, iDeviceConfigurationType, s_iMpiHostRank, MPI_COMM_WORLD);
 	MPI_Type_free(&iDeviceConfigurationType);
 
 	// allocate processor memory separately for each GPU
-	d_aMemory.resize(s_oNodeInfo.size());
-	d_aInstruction.resize(s_oNodeInfo.size());
-	d_aOutput.resize(s_oNodeInfo.size());
+	d_aMemory.resize(uiNumberOfLocalDevices);
+	d_aInstruction.resize(uiNumberOfLocalDevices);
+	d_aOutput.resize(uiNumberOfLocalDevices);
+
+	h_aOutput.resize(uiNumberOfLocalDevices);
+	h_aCell.resize(uiNumberOfLocalDevices);
 
 	cudaError_t eErrorCode = cudaSuccess;
-	for (int32 iDeviceIndex = 0; iDeviceIndex < s_oNodeConfiguration.size(); iDeviceIndex++)
+	for (int32 iDeviceIndex = 0; iDeviceIndex < uiNumberOfLocalDevices; iDeviceIndex++)
 	{
-		cudaSetDevice(iDeviceIndex);
+		eErrorCode = cudaSetDevice(iDeviceIndex);
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
 		const DeviceConfiguration &oDeviceConfiguration = s_oNodeConfiguration[iDeviceIndex];
 		const uint32 uiMemorySize =
 			oDeviceConfiguration.m_uiCellDim *
@@ -392,6 +406,10 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 		eErrorCode = cudaMalloc((void**)&d_aOutput[iDeviceIndex], oDeviceConfiguration.m_uiBlockDim * oDeviceConfiguration.m_uiGridDim * sizeof(uint32));
 		if (eErrorCode != cudaSuccess)
 			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+		// allocate buffer memory for output array
+		h_aOutput[iDeviceIndex] = new int32[oDeviceConfiguration.m_uiBlockDim * oDeviceConfiguration.m_uiGridDim];
+		h_aCell[iDeviceIndex] = new uint32[oDeviceConfiguration.m_uiCellDim];
 	}
 
 	if (iRank == s_iMpiHostRank)
@@ -411,10 +429,45 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 
 static bool Shutdown()
 {
-	return false;
+	cudaError_t eErrorCode = cudaSuccess;
+	for (int32 iDeviceIndex = 0; iDeviceIndex < s_oNodeConfiguration.size(); iDeviceIndex++)
+	{
+		eErrorCode = cudaSetDevice(iDeviceIndex);
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+		eErrorCode = cudaFree(d_aMemory[iDeviceIndex]);
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+		eErrorCode = cudaFree(d_aInstruction[iDeviceIndex]);
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+		eErrorCode = cudaFree(d_aOutput[iDeviceIndex]);
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+		eErrorCode = cudaDeviceReset();
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+		delete h_aOutput[iDeviceIndex];
+		delete h_aCell[iDeviceIndex];
+	}
+
+	d_aMemory.clear();
+	d_aInstruction.clear();
+	d_aOutput.clear();
+
+	h_aOutput.clear();
+	h_aCell.clear();
+
+	MPI_LOG("System shutdown.");
+	return true;
 }
 
-static bool Exec()
+static bool Exec(int32 iRank, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction)
 {
 	return false;
 }
