@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <memory>
 
+#include <tclap/CmdLine.h>
+
 #include <mpi.h>
 #include <cuda_runtime.h>
 
@@ -10,7 +12,7 @@ using snp::snpOperation;
 #include "../snpCommand.h"
 using snp::snpCommand;
 
-#include <tclap/CmdLine.h>
+#include "kernel.h"
 
 struct Config;
 struct DeviceInfo;
@@ -62,13 +64,17 @@ static SystemConfiguration	s_oNodeConfiguration;	// configuration for each devic
 // pointers to the memory allocated on device
 static std::vector<uint32 *>	d_aMemory;
 static std::vector<uint32 *>	d_aInstruction;
-static std::vector<uint32 *>	d_aOutput;
+static std::vector<int32 *>		d_aOutput;
 
 // pre-allocated buffers used when working with kernel
 static std::vector<int32 *>		h_aOutput;
 static std::vector<uint32 *>	h_aCell;
 
-//static uint32	s_cellIndex	= 0;
+// result of ther last performed Exec() command is the index of device and index of the cell inside its memory
+// pointing to the first matched cell during instruction
+static int32	s_iNodeIndex	= kCellNotFound;
+static uint32	s_iDeviceIndex	= 0;
+static int32	s_iCellIndex	= kCellNotFound;
 
 #define MPI_LOG(__format__, ...) printf("[%d:%s] "__format__"\n", s_iMpiRank, s_pszProcessorName, ##__VA_ARGS__)
 
@@ -291,7 +297,7 @@ static void RunLoop(int32 iRank, const SystemInfo &roSystemInfo)
 		{
 			case snp::STARTUP:		Startup(iRank, roSystemInfo, 9, 32, 32); break;	// TODO: check double call before broadcasting startup command
 			case snp::SHUTDOWN:		Shutdown();		break;	// TODO: check double call
-			case snp::EXEC:			Exec();			break;
+			case snp::EXEC:			/*Exec();*/			break;
 			case snp::READ:			Read();			break;
 
 			case snp::SYSTEM_INFO:
@@ -335,7 +341,7 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 		}
 
 		// find the minimum configuration which covers requested memory volume
-		uint32 uiMultiplier = ceilf((float)uiNumberOfPU / uiNumberOfThreadsPerIteration);
+		uint32 uiMultiplier = uint32(ceilf((float)uiNumberOfPU / uiNumberOfThreadsPerIteration));
 		for (int32 iDeviceIndex = 0; iDeviceIndex < roSystemInfo.size(); iDeviceIndex++)
 		{
 			oSystemConfiguration.push_back(DeviceConfiguration());
@@ -349,7 +355,7 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 	}
 
 	// send configurations to each process
-	const uint32 uiNumberOfLocalDevices = s_oNodeInfo.size();
+	const uint32 uiNumberOfLocalDevices = uint32(s_oNodeInfo.size());
 
 	s_oNodeConfiguration.clear();
 	s_oNodeConfiguration.resize(uiNumberOfLocalDevices);
@@ -374,24 +380,24 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 	h_aCell.resize(uiNumberOfLocalDevices);
 
 	cudaError_t eErrorCode = cudaSuccess;
-	for (int32 iDeviceIndex = 0; iDeviceIndex < uiNumberOfLocalDevices; iDeviceIndex++)
+	for (uint32 iDeviceIndex = 0; iDeviceIndex < uiNumberOfLocalDevices; iDeviceIndex++)
 	{
 		eErrorCode = cudaSetDevice(iDeviceIndex);
 		if (eErrorCode != cudaSuccess)
 			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
 
-		const DeviceConfiguration &oDeviceConfiguration = s_oNodeConfiguration[iDeviceIndex];
+		const DeviceConfiguration &roDeviceConfiguration = s_oNodeConfiguration[iDeviceIndex];
 		const uint32 uiMemorySize =
-			oDeviceConfiguration.m_uiCellDim *
-			oDeviceConfiguration.m_uiThreadDim *
-			oDeviceConfiguration.m_uiBlockDim *
-			oDeviceConfiguration.m_uiGridDim;
+			roDeviceConfiguration.m_uiCellDim *
+			roDeviceConfiguration.m_uiThreadDim *
+			roDeviceConfiguration.m_uiBlockDim *
+			roDeviceConfiguration.m_uiGridDim;
 
 		MPI_LOG("Configure device #%d", iDeviceIndex);
-		MPI_LOG("   Cell dim = %u", oDeviceConfiguration.m_uiCellDim);
-		MPI_LOG("   Thread dim = %u", oDeviceConfiguration.m_uiThreadDim);
-		MPI_LOG("   Block dim = %u", oDeviceConfiguration.m_uiBlockDim);
-		MPI_LOG("   Grid dim = %u", oDeviceConfiguration.m_uiGridDim);
+		MPI_LOG("   Cell dim = %u", roDeviceConfiguration.m_uiCellDim);
+		MPI_LOG("   Thread dim = %u", roDeviceConfiguration.m_uiThreadDim);
+		MPI_LOG("   Block dim = %u", roDeviceConfiguration.m_uiBlockDim);
+		MPI_LOG("   Grid dim = %u", roDeviceConfiguration.m_uiGridDim);
 		MPI_LOG("Memory allocated = %u", uiMemorySize * sizeof(uint32));
 
 		eErrorCode = cudaMalloc((void**)&d_aMemory[iDeviceIndex], uiMemorySize * sizeof(uint32));
@@ -399,17 +405,17 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
 
 		// TODO: should we place instruction and output arrays into shared memory or something for speadup?
-		eErrorCode = cudaMalloc((void**)&d_aInstruction[iDeviceIndex], 4 * oDeviceConfiguration.m_uiCellDim * sizeof(uint32));
+		eErrorCode = cudaMalloc((void**)&d_aInstruction[iDeviceIndex], 4 * roDeviceConfiguration.m_uiCellDim * sizeof(uint32));
 		if (eErrorCode != cudaSuccess)
 			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
 
-		eErrorCode = cudaMalloc((void**)&d_aOutput[iDeviceIndex], oDeviceConfiguration.m_uiBlockDim * oDeviceConfiguration.m_uiGridDim * sizeof(uint32));
+		eErrorCode = cudaMalloc((void**)&d_aOutput[iDeviceIndex], roDeviceConfiguration.m_uiBlockDim * roDeviceConfiguration.m_uiGridDim * sizeof(int32));
 		if (eErrorCode != cudaSuccess)
 			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
 
 		// allocate buffer memory for output array
-		h_aOutput[iDeviceIndex] = new int32[oDeviceConfiguration.m_uiBlockDim * oDeviceConfiguration.m_uiGridDim];
-		h_aCell[iDeviceIndex] = new uint32[oDeviceConfiguration.m_uiCellDim];
+		h_aOutput[iDeviceIndex] = new int32[roDeviceConfiguration.m_uiBlockDim * roDeviceConfiguration.m_uiGridDim];
+		h_aCell[iDeviceIndex] = new uint32[roDeviceConfiguration.m_uiCellDim];
 	}
 
 	if (iRank == s_iMpiHostRank)
@@ -469,10 +475,82 @@ static bool Shutdown()
 
 static bool Exec(int32 iRank, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction)
 {
-	return false;
+	// execute kernel function for each device
+	for (int32 iDeviceIndex = 0; iDeviceIndex < s_oNodeConfiguration.size(); iDeviceIndex++)
+	{
+		s_iDeviceIndex = iDeviceIndex;
+		const DeviceConfiguration &roDeviceConfiguration = s_oNodeConfiguration[iDeviceIndex];
+		s_iCellIndex = kernel_exec(
+			bSingleCell,
+			eOperation,
+			pInstruction,
+			roDeviceConfiguration.m_uiCellDim,
+			roDeviceConfiguration.m_uiThreadDim,
+			roDeviceConfiguration.m_uiBlockDim,
+			roDeviceConfiguration.m_uiGridDim,
+			d_aMemory[iDeviceIndex],
+			d_aInstruction[iDeviceIndex],
+			d_aOutput[iDeviceIndex],
+			h_aOutput[iDeviceIndex],
+			h_aCell[iDeviceIndex]
+		);
+
+		if (s_iCellIndex != kCellNotFound)
+			break;
+	}
+
+	// collect result from all child processes on the host
+	struct CellLocation
+	{
+		uint32	m_uiDeviceIndex;
+		int32	m_iCellIndex;
+	};
+
+	int32 iGroupSize = 0;
+	MPI_Comm_size(MPI_COMM_WORLD, &iGroupSize);
+
+	// prepare data to send
+	CellLocation oCellLocation = {s_iDeviceIndex, s_iCellIndex};
+
+	// prepare receiving buffer
+	std::vector<CellLocation> aResult;
+	if (iRank == s_iMpiHostRank)
+		aResult.resize(iGroupSize);
+
+	// threat device info struct as raw array of bytes
+	MPI_Datatype iCellLocationType;
+	MPI_Type_contiguous(sizeof(CellLocation), MPI_BYTE, &iCellLocationType);
+	MPI_Type_commit(&iCellLocationType);
+
+	MPI_Gather(&oCellLocation, 1, iCellLocationType, &aResult.front(), 1, iCellLocationType, s_iMpiHostRank, MPI_COMM_WORLD);
+	MPI_Type_free(&iCellLocationType);
+
+	// find the first matched cell
+	if (iRank == s_iMpiHostRank)
+	{
+		s_iNodeIndex = kCellNotFound;
+		for (int32 iNodeIndex = 0; iNodeIndex < iGroupSize; iNodeIndex++)
+		{
+			if (aResult[iNodeIndex].m_iCellIndex != kCellNotFound)
+			{
+				s_iNodeIndex = iNodeIndex;
+				break;
+			}
+		}
+
+		return (s_iNodeIndex != kCellNotFound);
+	}
+	return (s_iCellIndex != kCellNotFound);
 }
 
 static bool Read()
 {
+	//if (s_cellIndex != kCellNotFound)
+	//{
+	//	snpCudaSafeCall(cudaMemcpy(bitfield, d_memory + s_cellIndex * m_cellSize, m_cellSize * sizeof(uint32), cudaMemcpyDeviceToHost));
+	//	return true;
+	//}
+	//return false;
+
 	return false;
 }

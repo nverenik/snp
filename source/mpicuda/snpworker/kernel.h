@@ -7,17 +7,18 @@
 extern "C" const int32 kCellNotFound;
 
 extern "C" int32 kernel_exec(
-	bool singleCell,
-	snp::snpOperation operation,
-	const uint32 * const instruction,
-	uint32 cellSize,
-	uint32 cellsPerPU,
-	uint32 numberOfPU,
-	uint32 *d_memory,
-	uint32 *d_instruction,
-	int32 *d_output,
-	int32 *h_output,
-	uint32 *h_cell
+	bool bSingleCell,
+	snp::snpOperation eOperation,
+	const uint32 * const pInstruction,
+	uint32	uiCellDim,
+	uint32	uiThreadDim,
+	uint32	uiBlockDim,
+	uint32	uiGridDim,
+	uint32	*d_pMemory,
+	uint32	*d_pInstruction,
+	int32	*d_pOutput,
+	int32	*h_pOutput,
+	uint32	*h_pCell
 );
 
 #endif //__KERNEL_H__

@@ -113,36 +113,42 @@ __global__ void snp_perform_instruction(snp::snpOperation operation, const uint3
 	output[outputIndex] = result;
 }
 
-int32 kernel_exec(bool singleCell, snp::snpOperation operation, const uint32 * const instruction, uint32 cellSize,
-	uint32 cellsPerPU, uint32 numberOfPU, uint32 *d_memory, uint32 *d_instruction, int32 *d_output, int32 *h_output, uint32 *h_cell)
+int32 kernel_exec(
+	bool bSingleCell,
+	snp::snpOperation eOperation,
+	const uint32 * const pInstruction,
+	uint32	uiCellDim,
+	uint32	uiThreadDim,
+	uint32	uiBlockDim,
+	uint32	uiGridDim,
+	uint32	*d_pMemory,
+	uint32	*d_pInstruction,
+	int32	*d_pOutput,
+	int32	*h_pOutput,
+	uint32	*h_pCell)
 {
-	// setup GPU launch configuration
-	// TODO: get as much blocks as possible
-	const uint32 gridDim = 1;							// number of blocks (1 .. 65536) within grid
-	const uint32 blockDim = numberOfPU / gridDim;		// number of threads (1 .. 1024) within block
-	const uint32 &threadDim = cellsPerPU;				// number of cells within thread
-	const uint32 &cellDim = cellSize;					// number of uint32 within cell
+	const uint32 uiNumberOfPU = uiGridDim * uiBlockDim;
 
 	// copy instruction from CPU memory to global GPU memory
-	cudaMemcpy(d_instruction, instruction, 4 * cellDim * sizeof(uint32), cudaMemcpyHostToDevice);
+	cudaMemcpy(d_pInstruction, pInstruction, 4 * uiCellDim * sizeof(uint32), cudaMemcpyHostToDevice);
 
 	// prepare meaningful bitfield names (for CPU and GPU)
-	const uint32 * const dataMask		= instruction + 2 * cellSize;
-	const uint32 * const dataData		= instruction + 3 * cellSize;
+	const uint32 * const dataMask		= pInstruction + 2 * uiCellDim;
+	const uint32 * const dataData		= pInstruction + 3 * uiCellDim;
 
-	const uint32 * const d_addressMask	= d_instruction;
-	const uint32 * const d_addressData	= d_instruction + 1 * cellSize;
-	const uint32 * const d_dataMask		= d_instruction + 2 * cellSize;
-	const uint32 * const d_dataData		= d_instruction + 3 * cellSize;
+	const uint32 * const d_addressMask	= d_pInstruction;
+	const uint32 * const d_addressData	= d_pInstruction + 1 * uiCellDim;
+	const uint32 * const d_dataMask		= d_pInstruction + 2 * uiCellDim;
+	const uint32 * const d_dataData		= d_pInstruction + 3 * uiCellDim;
 
 	// asynchronously runnung kernel on GPU
-	if (singleCell == true)
+	if (bSingleCell == true)
 	{
-		snp_find_cell<<<dim3(gridDim), dim3(blockDim)>>>(d_addressMask, d_addressData, cellDim, threadDim, d_memory, d_output);
+		snp_find_cell<<<dim3(uiGridDim), dim3(uiBlockDim)>>>(d_addressMask, d_addressData, uiCellDim, uiThreadDim, d_pMemory, d_pOutput);
 	}
 	else
 	{
-		snp_perform_instruction<<<dim3(gridDim), dim3(blockDim)>>>(operation, d_addressMask, d_addressData, d_dataMask, d_dataData, cellDim, threadDim, d_memory, d_output);
+		snp_perform_instruction<<<dim3(uiGridDim), dim3(uiBlockDim)>>>(eOperation, d_addressMask, d_addressData, d_dataMask, d_dataData, uiCellDim, uiThreadDim, d_pMemory, d_pOutput);
 	}
 
 	//cudaDeviceSynchronize();
@@ -154,7 +160,7 @@ int32 kernel_exec(bool singleCell, snp::snpOperation operation, const uint32 * c
 	// the index of the selected cell within the PU (thread)
 
 	// copy output array from GPU to CPU
-	cudaMemcpy(h_output, d_output, numberOfPU * sizeof(int32), cudaMemcpyDeviceToHost);
+	cudaMemcpy(h_pOutput, d_pOutput, uiNumberOfPU * sizeof(int32), cudaMemcpyDeviceToHost);
 
 	//cudaError_t ret_cuda = cudaGetLastError();
 	//if (ret_cuda != cudaSuccess) {
@@ -162,32 +168,32 @@ int32 kernel_exec(bool singleCell, snp::snpOperation operation, const uint32 * c
 	//}
 
 	// analyze all selected cells to find the first one
-	int32 absoluteCellIndex = kCellNotFound;
-	for (uint32 puIndex = 0; puIndex < numberOfPU; puIndex++)
+	int32 iAbsoluteCellIndex = kCellNotFound;
+	for (uint32 uiPUIndex = 0; uiPUIndex < uiNumberOfPU; uiPUIndex++)
 	{
-		int32 cellIndex = h_output[puIndex];
-		if (cellIndex != kCellNotFound)
+		int32 iCellIndex = h_pOutput[uiPUIndex];
+		if (iCellIndex != kCellNotFound)
 		{
-			uint32 threadIndex = puIndex % blockDim;
-			uint32 blockIndex = puIndex / blockDim;
-			absoluteCellIndex = snp_get_absolute_cell_index(cellIndex, threadDim, threadIndex, blockDim, blockIndex);
+			uint32 uiThreadIndex = uiPUIndex % uiBlockDim;
+			uint32 uiBlockIndex = uiPUIndex / uiBlockDim;
+			iAbsoluteCellIndex = snp_get_absolute_cell_index(iCellIndex, uiThreadDim, uiThreadIndex, uiBlockDim, uiBlockIndex);
 			break;
 		}
 	}
 
-	if (singleCell == true && absoluteCellIndex != kCellNotFound)
+	if (bSingleCell == true && iAbsoluteCellIndex != kCellNotFound)
 	{
 		// deferred update for the first selected cell
 
 		// read selected cell from GPU
-		cudaMemcpy(h_cell, d_memory + absoluteCellIndex * cellDim, cellDim * sizeof(uint32), cudaMemcpyDeviceToHost);
+		cudaMemcpy(h_pCell, d_pMemory + iAbsoluteCellIndex * uiCellDim, uiCellDim * sizeof(uint32), cudaMemcpyDeviceToHost);
 
 		// perform instruction to this cell
-		snp_perform_cell(h_cell, dataMask, dataData, cellDim, operation);
+		snp_perform_cell(h_pCell, dataMask, dataData, uiCellDim, eOperation);
 
 		// write data back to GPU
-		cudaMemcpy(d_memory + absoluteCellIndex * cellDim, h_cell, cellDim * sizeof(uint32), cudaMemcpyHostToDevice);
+		cudaMemcpy(d_pMemory + iAbsoluteCellIndex * uiCellDim, h_pCell, uiCellDim * sizeof(uint32), cudaMemcpyHostToDevice);
 	}
 
-	return absoluteCellIndex;
+	return iAbsoluteCellIndex;
 }
