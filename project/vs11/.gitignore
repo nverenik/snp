@@ -5,8 +5,8 @@
 *.vcxproj.user
 *.pdb
 *.log
-Debug-CUDA/
-Debug-RocksDB/
-Release-CUDA/
-Release-RocksDB/
+Debug/
+Release/
+Win32/
+x64/
 ipch/

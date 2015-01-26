@@ -178,7 +178,7 @@ static bool GetSystemInfo(int32 iRank, SystemInfo &roSystemInfo)
 	{
 		// find the total number of devices to prepare receiver buffer
 		uint32 iDeviceCountTotal = 0;
-		for (int32 iNodeIndex = 0; iNodeIndex < aDeviceCount.size(); iNodeIndex++)
+		for (uint32 iNodeIndex = 0; iNodeIndex < aDeviceCount.size(); iNodeIndex++)
 			iDeviceCountTotal += aDeviceCount[iNodeIndex];
 
 		MPI_LOG("Total number of devices: %u", iDeviceCountTotal);
@@ -216,7 +216,7 @@ static bool GetSystemInfo(int32 iRank, SystemInfo &roSystemInfo)
 static void PrintSystemInfo(const SystemInfo &roSystemInfo)
 {
 	int32 iNodeRank = -1;
-	for (int32 iDeviceIndex = 0; iDeviceIndex < roSystemInfo.size(); iDeviceIndex++)
+	for (uint32 iDeviceIndex = 0; iDeviceIndex < roSystemInfo.size(); iDeviceIndex++)
 	{
 		const DeviceInfo &roDeviceInfo = roSystemInfo[iDeviceIndex];
 		if (roDeviceInfo.m_iNodeRank != iNodeRank)
@@ -331,7 +331,7 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 		// 1. number of blocks is multiple of multiprocessors amount
 		// 2. as number of threads per block use the maximum
 		uint32 uiNumberOfThreadsPerIteration = 0;
-		for (int32 iDeviceIndex = 0; iDeviceIndex < roSystemInfo.size(); iDeviceIndex++)
+		for (uint32 iDeviceIndex = 0; iDeviceIndex < roSystemInfo.size(); iDeviceIndex++)
 		{
 			// for each iteration add number of threads equals to what we obtain if add
 			// 1 block for each multi processor and use maximum threads in this block
@@ -342,7 +342,7 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 
 		// find the minimum configuration which covers requested memory volume
 		uint32 uiMultiplier = uint32(ceilf((float)uiNumberOfPU / uiNumberOfThreadsPerIteration));
-		for (int32 iDeviceIndex = 0; iDeviceIndex < roSystemInfo.size(); iDeviceIndex++)
+		for (uint32 iDeviceIndex = 0; iDeviceIndex < roSystemInfo.size(); iDeviceIndex++)
 		{
 			oSystemConfiguration.push_back(DeviceConfiguration());
 			DeviceConfiguration *pDeviceConfiguration = &oSystemConfiguration[iDeviceIndex];
@@ -421,7 +421,7 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 	if (iRank == s_iMpiHostRank)
 	{
 		uint32 uiTotalNumberOfPU = 0;
-		for (int32 iDeviceIndex = 0; iDeviceIndex < oSystemConfiguration.size(); iDeviceIndex++)
+		for (uint32 iDeviceIndex = 0; iDeviceIndex < oSystemConfiguration.size(); iDeviceIndex++)
 		{
 			uiTotalNumberOfPU +=
 				oSystemConfiguration[iDeviceIndex].m_uiBlockDim * 
@@ -436,7 +436,7 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 static bool Shutdown()
 {
 	cudaError_t eErrorCode = cudaSuccess;
-	for (int32 iDeviceIndex = 0; iDeviceIndex < s_oNodeConfiguration.size(); iDeviceIndex++)
+	for (uint32 iDeviceIndex = 0; iDeviceIndex < s_oNodeConfiguration.size(); iDeviceIndex++)
 	{
 		eErrorCode = cudaSetDevice(iDeviceIndex);
 		if (eErrorCode != cudaSuccess)
@@ -477,7 +477,7 @@ static bool Exec(int32 iRank, bool bSingleCell, snpOperation eOperation, const u
 {
 	// execute kernel function for each device
 	s_iDeviceIndex = kCellNotFound;
-	for (int32 iDeviceIndex = 0; iDeviceIndex < s_oNodeConfiguration.size(); iDeviceIndex++)
+	for (uint32 iDeviceIndex = 0; iDeviceIndex < s_oNodeConfiguration.size(); iDeviceIndex++)
 	{
 		cudaError_t eErrorCode = cudaSetDevice(iDeviceIndex);
 		if (eErrorCode != cudaSuccess)
@@ -524,7 +524,7 @@ static bool Exec(int32 iRank, bool bSingleCell, snpOperation eOperation, const u
 	if (iRank == s_iMpiHostRank)
 	{
 		s_iNodeIndex = kCellNotFound;
-		for (int32 iNodeIndex = 0; iNodeIndex < aFound.size(); iNodeIndex++)
+		for (uint32 iNodeIndex = 0; iNodeIndex < aFound.size(); iNodeIndex++)
 		{
 			if (aFound[iNodeIndex])
 			{
