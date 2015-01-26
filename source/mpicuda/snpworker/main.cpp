@@ -32,7 +32,7 @@ static bool SendSystemInfo(const SystemInfo &roSystemInfo);
 static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU);
 static bool Shutdown();
 static bool Exec(int32 iRank, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction);
-static bool Read();
+static bool Read(int32 iRank, uint32 *pBitfield);
 
 struct Config
 {
@@ -73,7 +73,7 @@ static std::vector<uint32 *>	h_aCell;
 // result of ther last performed Exec() command is the index of device and index of the cell inside its memory
 // pointing to the first matched cell during instruction
 static int32	s_iNodeIndex	= kCellNotFound;
-static uint32	s_iDeviceIndex	= 0;
+static int32	s_iDeviceIndex	= kCellNotFound;
 static int32	s_iCellIndex	= kCellNotFound;
 
 #define MPI_LOG(__format__, ...) printf("[%d:%s] "__format__"\n", s_iMpiRank, s_pszProcessorName, ##__VA_ARGS__)
@@ -298,7 +298,7 @@ static void RunLoop(int32 iRank, const SystemInfo &roSystemInfo)
 			case snp::STARTUP:		Startup(iRank, roSystemInfo, 9, 32, 32); break;	// TODO: check double call before broadcasting startup command
 			case snp::SHUTDOWN:		Shutdown();		break;	// TODO: check double call
 			case snp::EXEC:			/*Exec();*/			break;
-			case snp::READ:			Read();			break;
+			case snp::READ:			/*Read();*/			break;	// TODO: preallocate buffer for reading
 
 			case snp::SYSTEM_INFO:
 			default:
@@ -476,9 +476,13 @@ static bool Shutdown()
 static bool Exec(int32 iRank, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction)
 {
 	// execute kernel function for each device
+	s_iDeviceIndex = kCellNotFound;
 	for (int32 iDeviceIndex = 0; iDeviceIndex < s_oNodeConfiguration.size(); iDeviceIndex++)
 	{
-		s_iDeviceIndex = iDeviceIndex;
+		cudaError_t eErrorCode = cudaSetDevice(iDeviceIndex);
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
 		const DeviceConfiguration &roDeviceConfiguration = s_oNodeConfiguration[iDeviceIndex];
 		s_iCellIndex = kernel_exec(
 			bSingleCell,
@@ -496,61 +500,84 @@ static bool Exec(int32 iRank, bool bSingleCell, snpOperation eOperation, const u
 		);
 
 		if (s_iCellIndex != kCellNotFound)
+		{
+			s_iDeviceIndex = iDeviceIndex;
 			break;
+		}
 	}
 
-	// collect result from all child processes on the host
-	struct CellLocation
-	{
-		uint32	m_uiDeviceIndex;
-		int32	m_iCellIndex;
-	};
+	// share with host just the fact that cell is found
+	bool bFound = (s_iDeviceIndex != kCellNotFound && s_iCellIndex != kCellNotFound);
 
+	// prepare buffer to receive
 	int32 iGroupSize = 0;
 	MPI_Comm_size(MPI_COMM_WORLD, &iGroupSize);
 
-	// prepare data to send
-	CellLocation oCellLocation = {s_iDeviceIndex, s_iCellIndex};
-
-	// prepare receiving buffer
-	std::vector<CellLocation> aResult;
+	std::vector<bool> aFound;
 	if (iRank == s_iMpiHostRank)
-		aResult.resize(iGroupSize);
+		aFound.resize(iGroupSize);
 
-	// threat device info struct as raw array of bytes
-	MPI_Datatype iCellLocationType;
-	MPI_Type_contiguous(sizeof(CellLocation), MPI_BYTE, &iCellLocationType);
-	MPI_Type_commit(&iCellLocationType);
+	// share result
+	MPI_Gather(&bFound, 1, MPI_BYTE, &aFound.front(), 1, MPI_BYTE, s_iMpiHostRank, MPI_COMM_WORLD);
 
-	MPI_Gather(&oCellLocation, 1, iCellLocationType, &aResult.front(), 1, iCellLocationType, s_iMpiHostRank, MPI_COMM_WORLD);
-	MPI_Type_free(&iCellLocationType);
-
-	// find the first matched cell
+	// find the first matched node
 	if (iRank == s_iMpiHostRank)
 	{
 		s_iNodeIndex = kCellNotFound;
-		for (int32 iNodeIndex = 0; iNodeIndex < iGroupSize; iNodeIndex++)
+		for (int32 iNodeIndex = 0; iNodeIndex < aFound.size(); iNodeIndex++)
 		{
-			if (aResult[iNodeIndex].m_iCellIndex != kCellNotFound)
+			if (aFound[iNodeIndex])
 			{
 				s_iNodeIndex = iNodeIndex;
 				break;
 			}
 		}
-
 		return (s_iNodeIndex != kCellNotFound);
 	}
-	return (s_iCellIndex != kCellNotFound);
+	return bFound;
 }
 
-static bool Read()
+static bool Read(int32 iRank, uint32 *pBitfield)
 {
-	//if (s_cellIndex != kCellNotFound)
-	//{
-	//	snpCudaSafeCall(cudaMemcpy(bitfield, d_memory + s_cellIndex * m_cellSize, m_cellSize * sizeof(uint32), cudaMemcpyDeviceToHost));
-	//	return true;
-	//}
-	//return false;
+	// broadcast send index if target node
+	int32 iNodeIndex = kCellNotFound;
+	MPI_Bcast(&iNodeIndex, 1, MPI_INT, s_iMpiHostRank, MPI_COMM_WORLD);
 
-	return false;
+	if (iNodeIndex == kCellNotFound)
+		return false;
+	
+	// host node can store data itself
+	if (iRank == iNodeIndex)
+	{
+		assert(s_iDeviceIndex != kCellNotFound);
+		assert(s_iCellIndex != kCellNotFound);
+
+		// activate selected device (did store in the last exec() call)
+		cudaError_t eErrorCode = cudaSetDevice(s_iDeviceIndex);
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+		// get data directly from device
+		const DeviceConfiguration &roDeviceConfiguration = s_oNodeConfiguration[s_iDeviceIndex];
+		eErrorCode = cudaMemcpy(
+			pBitfield,
+			d_aMemory[s_iDeviceIndex] + s_iCellIndex * roDeviceConfiguration.m_uiCellDim,
+			roDeviceConfiguration.m_uiCellDim * sizeof(uint32),
+			cudaMemcpyDeviceToHost
+		);
+		if (eErrorCode != cudaSuccess)
+			MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+		// send data if needed
+		if (iRank != s_iMpiHostRank)
+			MPI_Send(pBitfield, roDeviceConfiguration.m_uiCellDim * sizeof(uint32), MPI_BYTE, s_iMpiHostRank, MPI_ANY_TAG, MPI_COMM_WORLD);
+	}
+
+	if (iRank == s_iMpiHostRank && iRank != iNodeIndex)
+	{
+		int32 iSize = s_oNodeConfiguration[0].m_uiCellDim * sizeof(uint32);
+		MPI_Recv(pBitfield, iSize, MPI_BYTE, iNodeIndex, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	}
+
+	return true;
 }
