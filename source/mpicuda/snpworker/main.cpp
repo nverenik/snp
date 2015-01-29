@@ -1,10 +1,10 @@
+#include <mpi.h>
+#include <cuda_runtime.h>
+
 #include <stdio.h>
 #include <memory>
 
 #include <tclap/CmdLine.h>
-
-#include <mpi.h>
-#include <cuda_runtime.h>
 
 #include <snp/snpOperation.h>
 using snp::snpOperation;
@@ -252,9 +252,9 @@ static void PrintSystemInfo(const SystemInfo &roSystemInfo)
 		printf("\n");
 
 		// Memory
-		printf("   Total global memory: %d\n", roDeviceProps.totalGlobalMem);
-		printf("   Total constant memory: %d\n", roDeviceProps.totalConstMem);
-		printf("   Shared memory per block: %d\n", roDeviceProps.sharedMemPerBlock);
+		printf("   Total global memory: %zu\n", roDeviceProps.totalGlobalMem);
+		printf("   Total constant memory: %zu\n", roDeviceProps.totalConstMem);
+		printf("   Shared memory per block: %zu\n", roDeviceProps.sharedMemPerBlock);
 		printf("   Registers per block: %d\n", roDeviceProps.regsPerBlock);
 		printf("\n");
 	}
@@ -398,7 +398,7 @@ static bool Startup(int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSi
 		MPI_LOG("   Thread dim = %u", roDeviceConfiguration.m_uiThreadDim);
 		MPI_LOG("   Block dim = %u", roDeviceConfiguration.m_uiBlockDim);
 		MPI_LOG("   Grid dim = %u", roDeviceConfiguration.m_uiGridDim);
-		MPI_LOG("Memory allocated = %u", uiMemorySize * sizeof(uint32));
+		MPI_LOG("Memory allocated = %lu", uiMemorySize * sizeof(uint32));
 
 		eErrorCode = cudaMalloc((void**)&d_aMemory[iDeviceIndex], uiMemorySize * sizeof(uint32));
 		if (eErrorCode != cudaSuccess)
@@ -507,18 +507,21 @@ static bool Exec(int32 iRank, bool bSingleCell, snpOperation eOperation, const u
 	}
 
 	// share with host just the fact that cell is found
-	bool bFound = (s_iDeviceIndex != kCellNotFound && s_iCellIndex != kCellNotFound);
+	// bool bFound = (s_iDeviceIndex != kCellNotFound && s_iCellIndex != kCellNotFound);
+	uint8 uiFound = (s_iDeviceIndex != kCellNotFound && s_iCellIndex != kCellNotFound) ? 1 : 0;
 
 	// prepare buffer to receive
 	int32 iGroupSize = 0;
 	MPI_Comm_size(MPI_COMM_WORLD, &iGroupSize);
 
-	std::vector<bool> aFound;
+	// std::vector<bool> aFound;
+	std::vector<uint8> aFound;
 	if (iRank == s_iMpiHostRank)
 		aFound.resize(iGroupSize);
 
 	// share result
-	MPI_Gather(&bFound, 1, MPI_BYTE, &aFound.front(), 1, MPI_BYTE, s_iMpiHostRank, MPI_COMM_WORLD);
+	//MPI_Gather((void *)&bFound, 1, MPI_BYTE, (void *)(&aFound.front()), 1, MPI_BYTE, s_iMpiHostRank, MPI_COMM_WORLD);
+	MPI_Gather(&uiFound, 1, MPI_BYTE, &aFound.front(), 1, MPI_BYTE, s_iMpiHostRank, MPI_COMM_WORLD);
 
 	// find the first matched node
 	if (iRank == s_iMpiHostRank)
@@ -534,7 +537,7 @@ static bool Exec(int32 iRank, bool bSingleCell, snpOperation eOperation, const u
 		}
 		return (s_iNodeIndex != kCellNotFound);
 	}
-	return bFound;
+	return uiFound;
 }
 
 static bool Read(int32 iRank, uint32 *pBitfield)

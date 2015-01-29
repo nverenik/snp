@@ -1,0 +1,13 @@
+#!/bin/bash
+#PBS -N run
+#PBS -l nodes=1:ppn=3
+#PBS -j oe
+
+#cd $PBS_O_WORKDIR
+#./a.out > `hostname`-run.out
+
+LD_LIBRARY_PATH=/opt/intel/impi/4.1.0/lib64
+export LD_LIBRARY_PATH
+./snpworker
+
+
