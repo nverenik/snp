@@ -1,13 +1,9 @@
 #!/bin/bash
 #PBS -N run
-#PBS -l nodes=1:ppn=3
+#PBS -l nodes=3:ppn=1
 #PBS -j oe
 
-#cd $PBS_O_WORKDIR
-#./a.out > `hostname`-run.out
 
-LD_LIBRARY_PATH=/opt/intel/impi/4.1.0/lib64
-export LD_LIBRARY_PATH
-./snpworker
-
-
+cd $PBS_O_WORKDIR
+cat $PBS_NODEFILE > `hostname`.out
+/usr/lib64/openmpi/bin/mpirun -hostfile $PBS_NODEFILE ./snpworker

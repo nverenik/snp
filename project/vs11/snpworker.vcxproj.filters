@@ -90,6 +90,12 @@
     <ClInclude Include="..\..\source\mpicuda\snpworker\kernel.h">
       <Filter>snpworker</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\snpworker\Worker.h">
+      <Filter>snpworker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\snpworker\Common.h">
+      <Filter>snpworker</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\source\mpicuda\snpworker\kernel.cu">
@@ -98,6 +104,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\mpicuda\snpworker\main.cpp">
+      <Filter>snpworker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\snpworker\Worker.cpp">
       <Filter>snpworker</Filter>
     </ClCompile>
   </ItemGroup>

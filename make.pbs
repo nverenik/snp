@@ -1,0 +1,8 @@
+#!/bin/bash
+#PBS -N make
+#PBS -l nodes=1
+#PBS -j oe
+
+
+cd $PBS_O_WORKDIR
+/usr/lib64/openmpi/bin/mpirun -hostfile $PBS_NODEFILE make

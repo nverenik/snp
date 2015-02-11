@@ -30,7 +30,19 @@
     <ClInclude Include="..\..\include\snp\snpOperation.h">
       <Filter>include\snp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\source\mpicuda\snpCommand.h">
+    <ClInclude Include="..\..\source\mpicuda\ProtocolHandler.h">
+      <Filter>source\mpicuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\Packet.h">
+      <Filter>source\mpicuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\DataTypes.h">
+      <Filter>source\mpicuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\Socket.h">
+      <Filter>source\mpicuda</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\SocketAcceptor.h">
       <Filter>source\mpicuda</Filter>
     </ClInclude>
   </ItemGroup>
@@ -39,6 +51,18 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\mpicuda\snpDeviceCUDA.cpp">
+      <Filter>source\mpicuda</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\ProtocolHandler.cpp">
+      <Filter>source\mpicuda</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\Packet.cpp">
+      <Filter>source\mpicuda</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\Socket.cpp">
+      <Filter>source\mpicuda</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\SocketAcceptor.cpp">
       <Filter>source\mpicuda</Filter>
     </ClCompile>
   </ItemGroup>

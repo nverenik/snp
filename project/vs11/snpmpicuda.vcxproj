@@ -24,10 +24,18 @@
     <ClInclude Include="..\..\include\snp\snpErrorCode.h" />
     <ClInclude Include="..\..\include\snp\snpMacros.h" />
     <ClInclude Include="..\..\include\snp\snpOperation.h" />
-    <ClInclude Include="..\..\source\mpicuda\snpCommand.h" />
+    <ClInclude Include="..\..\source\mpicuda\DataTypes.h" />
+    <ClInclude Include="..\..\source\mpicuda\Packet.h" />
+    <ClInclude Include="..\..\source\mpicuda\ProtocolHandler.h" />
+    <ClInclude Include="..\..\source\mpicuda\Socket.h" />
+    <ClInclude Include="..\..\source\mpicuda\SocketAcceptor.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\source\mpicuda\Packet.cpp" />
     <ClCompile Include="..\..\source\mpicuda\snpDeviceCUDA.cpp" />
+    <ClCompile Include="..\..\source\mpicuda\ProtocolHandler.cpp" />
+    <ClCompile Include="..\..\source\mpicuda\Socket.cpp" />
+    <ClCompile Include="..\..\source\mpicuda\SocketAcceptor.cpp" />
     <ClCompile Include="..\..\source\snpDevice.cpp" />
   </ItemGroup>
   <ItemGroup>

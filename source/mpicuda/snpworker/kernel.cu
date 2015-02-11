@@ -11,9 +11,9 @@ const int32 kCellNotFound = -1;
 //
 __device__ __host__ uint32 snp_get_absolute_cell_index(uint32 cellIndex, uint32 threadDim, uint32 threadIndex, uint32 blockDim, uint32 blockIndex)
 {
-	// TODO: should we precalculate blockDim * threadDim value?
-	// the number of operations won't be changed
-	return threadIndex + blockDim * (cellIndex + threadDim * blockIndex);
+    // TODO: should we precalculate blockDim * threadDim value?
+    // the number of operations won't be changed
+    return threadIndex + blockDim * (cellIndex + threadDim * blockIndex);
 }
 
 //
@@ -22,7 +22,7 @@ __device__ __host__ uint32 snp_get_absolute_cell_index(uint32 cellIndex, uint32 
 //
 __device__ uint32 snp_get_absolute_output_index(uint32 threadIndex, uint32 blockDim, uint32 blockIndex)
 {
-	return threadIndex + blockDim * blockIndex;
+    return threadIndex + blockDim * blockIndex;
 }
 
 //
@@ -33,14 +33,14 @@ __device__ uint32 snp_get_absolute_output_index(uint32 threadIndex, uint32 block
 //
 __device__ bool snp_check_cell(const uint32 * const cell, const uint32 * const mask, const uint32 * const data, uint32 cellDim)
 {
-	for (uint32 index = 0; index < cellDim; index++)
-	{
-		if (snpCompareBits(cell[index], mask[index], data[index]) != true)
-		{
-			return false;
-		}
-	}
-	return true;
+    for (uint32 index = 0; index < cellDim; index++)
+    {
+        if (snpCompareBits(cell[index], mask[index], data[index]) != true)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 //
@@ -51,15 +51,15 @@ __device__ bool snp_check_cell(const uint32 * const cell, const uint32 * const m
 //
 __device__ __host__ void snp_perform_cell(uint32 *cell, const uint32 * const mask, const uint32 * const data, uint32 cellDim, snp::snpOperation operation)
 {
-	// loop was moved into switch to reduce number of condition tests
-	switch(operation)
-	{
-		case snp::snpAssign:	snpUpdateBits(snpUpdateBitsASSIGN,	cell[index], mask[index], data[index], cellDim);	break;
-		case snp::snpNot:		snpUpdateBits(snpUpdateBitsNOT,		cell[index], mask[index], data[index], cellDim);	break;
-		case snp::snpAnd:		snpUpdateBits(snpUpdateBitsAND,		cell[index], mask[index], data[index], cellDim);	break;
-		case snp::snpOr:		snpUpdateBits(snpUpdateBitsOR,		cell[index], mask[index], data[index], cellDim);	break;
-		default: break;
-	}
+    // loop was moved into switch to reduce number of condition tests
+    switch(operation)
+    {
+        case snp::snpAssign:    snpUpdateBits(snpUpdateBitsASSIGN,  cell[index], mask[index], data[index], cellDim);    break;
+        case snp::snpNot:       snpUpdateBits(snpUpdateBitsNOT,     cell[index], mask[index], data[index], cellDim);    break;
+        case snp::snpAnd:       snpUpdateBits(snpUpdateBitsAND,     cell[index], mask[index], data[index], cellDim);    break;
+        case snp::snpOr:        snpUpdateBits(snpUpdateBitsOR,      cell[index], mask[index], data[index], cellDim);    break;
+        default: break;
+    }
 }
 
 //
@@ -71,20 +71,20 @@ __device__ __host__ void snp_perform_cell(uint32 *cell, const uint32 * const mas
 //
 __global__ void snp_find_cell(const uint32 * const mask, const uint32 * const data, uint32 cellDim, uint32 threadDim, uint32 *memory, int32 *output)
 {
-	uint32 outputIndex = snp_get_absolute_output_index(threadIdx.x, blockDim.x, blockIdx.x);
-	for (uint32 cellIndex = 0; cellIndex < threadDim; cellIndex++)
-	{
-		uint32 absoluteCellIndex = snp_get_absolute_cell_index(cellIndex, threadDim, threadIdx.x, blockDim.x, blockIdx.x);
-		uint32 *cell = &memory[absoluteCellIndex * cellDim];
+    uint32 outputIndex = snp_get_absolute_output_index(threadIdx.x, blockDim.x, blockIdx.x);
+    for (uint32 cellIndex = 0; cellIndex < threadDim; cellIndex++)
+    {
+        uint32 absoluteCellIndex = snp_get_absolute_cell_index(cellIndex, threadDim, threadIdx.x, blockDim.x, blockIdx.x);
+        uint32 *cell = &memory[absoluteCellIndex * cellDim];
 
-		bool selected = snp_check_cell(cell, mask, data, cellDim);
-		if (selected == true)
-		{
-			output[outputIndex] = cellIndex;
-			return;
-		}
-	}
-	output[outputIndex] = kCellNotFound;
+        bool selected = snp_check_cell(cell, mask, data, cellDim);
+        if (selected == true)
+        {
+            output[outputIndex] = cellIndex;
+            return;
+        }
+    }
+    output[outputIndex] = kCellNotFound;
 }
 
 //
@@ -93,107 +93,107 @@ __global__ void snp_find_cell(const uint32 * const mask, const uint32 * const da
 // where each element is corresponds to single thread = PU).
 //
 __global__ void snp_perform_instruction(snp::snpOperation operation, const uint32 * const addressMask, const uint32 * const addressData,
-	const uint32 * const dataMask, const uint32 * const dataData, uint32 cellDim, uint32 threadDim, uint32 *memory, int32 *output)
+    const uint32 * const dataMask, const uint32 * const dataData, uint32 cellDim, uint32 threadDim, uint32 *memory, int32 *output)
 {
-	int32 result = kCellNotFound;
-	for (int32 cellIndex = threadDim - 1; cellIndex >= 0; cellIndex--)
-	{
-		uint32 absoluteCellIndex = snp_get_absolute_cell_index(cellIndex, threadDim, threadIdx.x, blockDim.x, blockIdx.x);
-		uint32 *cell = &memory[absoluteCellIndex * cellDim];
+    int32 result = kCellNotFound;
+    for (int32 cellIndex = threadDim - 1; cellIndex >= 0; cellIndex--)
+    {
+        uint32 absoluteCellIndex = snp_get_absolute_cell_index(cellIndex, threadDim, threadIdx.x, blockDim.x, blockIdx.x);
+        uint32 *cell = &memory[absoluteCellIndex * cellDim];
 
-		bool selected = snp_check_cell(cell, addressMask, addressData, cellDim);
-		if (selected == true)
-		{
-			result = cellIndex;
-			snp_perform_cell(cell, dataMask, dataData, cellDim, operation);
-		}
-	}
+        bool selected = snp_check_cell(cell, addressMask, addressData, cellDim);
+        if (selected == true)
+        {
+            result = cellIndex;
+            snp_perform_cell(cell, dataMask, dataData, cellDim, operation);
+        }
+    }
 
-	uint32 outputIndex = snp_get_absolute_output_index(threadIdx.x, blockDim.x, blockIdx.x);
-	output[outputIndex] = result;
+    uint32 outputIndex = snp_get_absolute_output_index(threadIdx.x, blockDim.x, blockIdx.x);
+    output[outputIndex] = result;
 }
 
 int32 kernel_exec(
-	bool bSingleCell,
-	snp::snpOperation eOperation,
-	const uint32 * const pInstruction,
-	uint32	uiCellDim,
-	uint32	uiThreadDim,
-	uint32	uiBlockDim,
-	uint32	uiGridDim,
-	uint32	*d_pMemory,
-	uint32	*d_pInstruction,
-	int32	*d_pOutput,
-	int32	*h_pOutput,
-	uint32	*h_pCell)
+    bool bSingleCell,
+    snp::snpOperation eOperation,
+    const uint32 * const pInstruction,
+    uint32  uiCellDim,
+    uint32  uiThreadDim,
+    uint32  uiBlockDim,
+    uint32  uiGridDim,
+    uint32  *d_pMemory,
+    uint32  *d_pInstruction,
+    int32   *d_pOutput,
+    int32   *h_pOutput,
+    uint32  *h_pCell)
 {
-	const uint32 uiNumberOfPU = uiGridDim * uiBlockDim;
+    const uint32 uiNumberOfPU = uiGridDim * uiBlockDim;
 
-	// copy instruction from CPU memory to global GPU memory
-	cudaMemcpy(d_pInstruction, pInstruction, 4 * uiCellDim * sizeof(uint32), cudaMemcpyHostToDevice);
+    // copy instruction from CPU memory to global GPU memory
+    cudaMemcpy(d_pInstruction, pInstruction, 4 * uiCellDim * sizeof(uint32), cudaMemcpyHostToDevice);
 
-	// prepare meaningful bitfield names (for CPU and GPU)
-	const uint32 * const dataMask		= pInstruction + 2 * uiCellDim;
-	const uint32 * const dataData		= pInstruction + 3 * uiCellDim;
+    // prepare meaningful bitfield names (for CPU and GPU)
+    const uint32 * const dataMask       = pInstruction + 2 * uiCellDim;
+    const uint32 * const dataData       = pInstruction + 3 * uiCellDim;
 
-	const uint32 * const d_addressMask	= d_pInstruction;
-	const uint32 * const d_addressData	= d_pInstruction + 1 * uiCellDim;
-	const uint32 * const d_dataMask		= d_pInstruction + 2 * uiCellDim;
-	const uint32 * const d_dataData		= d_pInstruction + 3 * uiCellDim;
+    const uint32 * const d_addressMask  = d_pInstruction;
+    const uint32 * const d_addressData  = d_pInstruction + 1 * uiCellDim;
+    const uint32 * const d_dataMask     = d_pInstruction + 2 * uiCellDim;
+    const uint32 * const d_dataData     = d_pInstruction + 3 * uiCellDim;
 
-	// asynchronously runnung kernel on GPU
-	if (bSingleCell == true)
-	{
-		snp_find_cell<<<dim3(uiGridDim), dim3(uiBlockDim)>>>(d_addressMask, d_addressData, uiCellDim, uiThreadDim, d_pMemory, d_pOutput);
-	}
-	else
-	{
-		snp_perform_instruction<<<dim3(uiGridDim), dim3(uiBlockDim)>>>(eOperation, d_addressMask, d_addressData, d_dataMask, d_dataData, uiCellDim, uiThreadDim, d_pMemory, d_pOutput);
-	}
+    // asynchronously runnung kernel on GPU
+    if (bSingleCell == true)
+    {
+        snp_find_cell<<<dim3(uiGridDim), dim3(uiBlockDim)>>>(d_addressMask, d_addressData, uiCellDim, uiThreadDim, d_pMemory, d_pOutput);
+    }
+    else
+    {
+        snp_perform_instruction<<<dim3(uiGridDim), dim3(uiBlockDim)>>>(eOperation, d_addressMask, d_addressData, d_dataMask, d_dataData, uiCellDim, uiThreadDim, d_pMemory, d_pOutput);
+    }
 
-	//cudaDeviceSynchronize();
+    //cudaDeviceSynchronize();
 
-	// test after kerner finished
-	//cudaError_t ret_cuda = cudaGetLastError();
+    // test after kerner finished
+    //cudaError_t ret_cuda = cudaGetLastError();
 
-	// every thread (=PU) did write into 'output' array
-	// the index of the selected cell within the PU (thread)
+    // every thread (=PU) did write into 'output' array
+    // the index of the selected cell within the PU (thread)
 
-	// copy output array from GPU to CPU
-	cudaMemcpy(h_pOutput, d_pOutput, uiNumberOfPU * sizeof(int32), cudaMemcpyDeviceToHost);
+    // copy output array from GPU to CPU
+    cudaMemcpy(h_pOutput, d_pOutput, uiNumberOfPU * sizeof(int32), cudaMemcpyDeviceToHost);
 
-	//cudaError_t ret_cuda = cudaGetLastError();
-	//if (ret_cuda != cudaSuccess) {
-	//	printf("%s\n", cudaGetErrorString(ret_cuda));
-	//}
+    //cudaError_t ret_cuda = cudaGetLastError();
+    //if (ret_cuda != cudaSuccess) {
+    //    printf("%s\n", cudaGetErrorString(ret_cuda));
+    //}
 
-	// analyze all selected cells to find the first one
-	int32 iAbsoluteCellIndex = kCellNotFound;
-	for (uint32 uiPUIndex = 0; uiPUIndex < uiNumberOfPU; uiPUIndex++)
-	{
-		int32 iCellIndex = h_pOutput[uiPUIndex];
-		if (iCellIndex != kCellNotFound)
-		{
-			uint32 uiThreadIndex = uiPUIndex % uiBlockDim;
-			uint32 uiBlockIndex = uiPUIndex / uiBlockDim;
-			iAbsoluteCellIndex = snp_get_absolute_cell_index(iCellIndex, uiThreadDim, uiThreadIndex, uiBlockDim, uiBlockIndex);
-			break;
-		}
-	}
+    // analyze all selected cells to find the first one
+    int32 iAbsoluteCellIndex = kCellNotFound;
+    for (uint32 uiPUIndex = 0; uiPUIndex < uiNumberOfPU; uiPUIndex++)
+    {
+        int32 iCellIndex = h_pOutput[uiPUIndex];
+        if (iCellIndex != kCellNotFound)
+        {
+            uint32 uiThreadIndex = uiPUIndex % uiBlockDim;
+            uint32 uiBlockIndex = uiPUIndex / uiBlockDim;
+            iAbsoluteCellIndex = snp_get_absolute_cell_index(iCellIndex, uiThreadDim, uiThreadIndex, uiBlockDim, uiBlockIndex);
+            break;
+        }
+    }
 
-	if (bSingleCell == true && iAbsoluteCellIndex != kCellNotFound)
-	{
-		// deferred update for the first selected cell
+    if (bSingleCell == true && iAbsoluteCellIndex != kCellNotFound)
+    {
+        // deferred update for the first selected cell
 
-		// read selected cell from GPU
-		cudaMemcpy(h_pCell, d_pMemory + iAbsoluteCellIndex * uiCellDim, uiCellDim * sizeof(uint32), cudaMemcpyDeviceToHost);
+        // read selected cell from GPU
+        cudaMemcpy(h_pCell, d_pMemory + iAbsoluteCellIndex * uiCellDim, uiCellDim * sizeof(uint32), cudaMemcpyDeviceToHost);
 
-		// perform instruction to this cell
-		snp_perform_cell(h_pCell, dataMask, dataData, uiCellDim, eOperation);
+        // perform instruction to this cell
+        snp_perform_cell(h_pCell, dataMask, dataData, uiCellDim, eOperation);
 
-		// write data back to GPU
-		cudaMemcpy(d_pMemory + iAbsoluteCellIndex * uiCellDim, h_pCell, uiCellDim * sizeof(uint32), cudaMemcpyHostToDevice);
-	}
+        // write data back to GPU
+        cudaMemcpy(d_pMemory + iAbsoluteCellIndex * uiCellDim, h_pCell, uiCellDim * sizeof(uint32), cudaMemcpyHostToDevice);
+    }
 
-	return iAbsoluteCellIndex;
+    return iAbsoluteCellIndex;
 }

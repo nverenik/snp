@@ -44,12 +44,15 @@
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\XorHandler.h" />
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ZshCompletionOutput.h" />
     <ClInclude Include="..\..\source\mpicuda\snpworker\kernel.h" />
+    <ClInclude Include="..\..\source\mpicuda\snpworker\Common.h" />
+    <ClInclude Include="..\..\source\mpicuda\snpworker\Worker.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\source\mpicuda\snpworker\kernel.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\mpicuda\snpworker\main.cpp" />
+    <ClCompile Include="..\..\source\mpicuda\snpworker\Worker.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DA7C1049-1DC3-4949-A3A8-CDAA974C37F6}</ProjectGuid>
