@@ -50,7 +50,7 @@ public:
 
 	inline bool isReady() const { return m_device != nullptr; }
 
-	uint16 getCellSize() const;
+	static uint16 getCellSize();
 	uint32 getCellsPerPU() const;
 	uint32 getNumberOfPU() const;
 
@@ -192,7 +192,7 @@ bool snpDevice<bitwidth>::dump()
 }
 
 template<uint16 bitwidth>
-uint16 snpDevice<bitwidth>::getCellSize() const
+uint16 snpDevice<bitwidth>::getCellSize()
 {
     return s_cellSize;
 }

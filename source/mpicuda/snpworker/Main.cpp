@@ -5,13 +5,19 @@
 
 #include <tclap/CmdLine.h>
 
+#ifdef WIN32
+#include <pthread.h>
+#include <sched.h>
+#include <semaphore.h>
+#endif // WIN32
+
 //#include <snp/snpOperation.h>
 //using snp::snpOperation;
 //
 //#include "../snpCommand.h"
 //using snp::snpCommand;
 //
-//#include "kernel.h"
+//#include "Kernel.h"
 #include "Worker.h"
 //
 struct Config;
@@ -23,6 +29,8 @@ struct Config;
 
 static void OnExit();
 static bool ProcessCommandLine(int32 argc, char* argv[], Config &roConfig);
+
+extern "C" void * ThreadServerF(void *pArg);
 
 struct Config
 {
@@ -85,7 +93,7 @@ int main(int argc, char* argv[])
     if (oWorker.IsHost() && !ProcessCommandLine(argc, argv, oConfig))
         bExit = true;
 
-    // and finish all processes in cast of error
+    // and finish all processes in case of error
     MPI_Bcast(&bExit, 1, MPI_BYTE, oWorker.GetHostRank(), oWorker.GetCommunicator());
     if (bExit) return 0;
 
@@ -93,8 +101,22 @@ int main(int argc, char* argv[])
     if (oWorker.IsHost() && oConfig.m_bLogSystemInfo)
     {
         oWorker.PrintSystemInfo();
+        // todo: abort slave nodes as well
         return 0;
     }
+
+    if (oWorker.IsHost() && oConfig.m_bTestEnabled)
+    {
+        // run separated thread which emulates main app
+        pthread_t hThreadServer;
+        if (pthread_create(&hThreadServer, NULL, ThreadServerF, NULL) != 0)
+        {
+            //LOG_MESSAGE( 1, "Error creating Server thread: %s", strerror(errno) );
+            return 0;
+        }
+    }
+
+    // connect here?
 
     oWorker.RunLoop();
 

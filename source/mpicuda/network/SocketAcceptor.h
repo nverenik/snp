@@ -7,14 +7,14 @@
 class CSocketAcceptor
 {
 public:
-	CSocketAcceptor();
+    CSocketAcceptor();
 
-	void AcceptConnections();
-	int GetAcceptedSocket() const { return m_iAcceptedSocket; }
+    void AcceptConnections();
+    int GetAcceptedSocket() const { return m_iAcceptedSocket; }
 
 private:
-	int m_iListeningPort;
-	int m_iAcceptedSocket;
+    int m_iListeningPort;
+    int m_iAcceptedSocket;
 
 };
 

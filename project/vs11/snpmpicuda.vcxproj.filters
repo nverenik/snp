@@ -10,9 +10,6 @@
     <Filter Include="include\snp">
       <UniqueIdentifier>{9556cc2d-cf08-43ef-849f-f2e132d67ec3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="source\mpicuda">
-      <UniqueIdentifier>{fb49ca24-3c7e-4e5f-a7b2-f9051d39f7d9}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\snp\snp.h">
@@ -30,40 +27,10 @@
     <ClInclude Include="..\..\include\snp\snpOperation.h">
       <Filter>include\snp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\source\mpicuda\ProtocolHandler.h">
-      <Filter>source\mpicuda</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\source\mpicuda\Packet.h">
-      <Filter>source\mpicuda</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\source\mpicuda\DataTypes.h">
-      <Filter>source\mpicuda</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\source\mpicuda\Socket.h">
-      <Filter>source\mpicuda</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\source\mpicuda\SocketAcceptor.h">
-      <Filter>source\mpicuda</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\snpDevice.cpp">
       <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\mpicuda\snpDeviceCUDA.cpp">
-      <Filter>source\mpicuda</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\mpicuda\ProtocolHandler.cpp">
-      <Filter>source\mpicuda</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\mpicuda\Packet.cpp">
-      <Filter>source\mpicuda</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\mpicuda\Socket.cpp">
-      <Filter>source\mpicuda</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\mpicuda\SocketAcceptor.cpp">
-      <Filter>source\mpicuda</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

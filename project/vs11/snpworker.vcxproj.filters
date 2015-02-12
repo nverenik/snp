@@ -13,6 +13,15 @@
     <Filter Include="snpworker">
       <UniqueIdentifier>{affcfcf4-6ae6-4fdf-8b50-772a780bbafa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="pthreads-win32">
+      <UniqueIdentifier>{d043ce4a-d7da-408e-85c4-df0492db3a4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pthreads-win32\include">
+      <UniqueIdentifier>{749112ff-9da0-4e6d-90a6-28e40473ceff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="network">
+      <UniqueIdentifier>{5412acc3-7fac-4042-ba9a-451697b888e9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\Arg.h">
@@ -87,27 +96,66 @@
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ZshCompletionOutput.h">
       <Filter>tclap\include\tclap</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\source\mpicuda\snpworker\kernel.h">
-      <Filter>snpworker</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\source\mpicuda\snpworker\Worker.h">
       <Filter>snpworker</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\mpicuda\snpworker\Common.h">
       <Filter>snpworker</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\snpworker\Kernel.h">
+      <Filter>snpworker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\pthreads-win32\include\pthread.h">
+      <Filter>pthreads-win32\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\pthreads-win32\include\sched.h">
+      <Filter>pthreads-win32\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\external\pthreads-win32\include\semaphore.h">
+      <Filter>pthreads-win32\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\DataTypes.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\Packet.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\ProtocolHandler.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\Socket.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\SocketAcceptor.h">
+      <Filter>network</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\source\mpicuda\snpworker\kernel.cu">
-      <Filter>snpworker</Filter>
-    </CudaCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\source\mpicuda\snpworker\main.cpp">
-      <Filter>snpworker</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\source\mpicuda\snpworker\Worker.cpp">
       <Filter>snpworker</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\snpworker\Main.cpp">
+      <Filter>snpworker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\snpworker\Test.cpp">
+      <Filter>snpworker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\network\Packet.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\network\ProtocolHandler.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\network\Socket.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\network\SocketAcceptor.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\source\mpicuda\snpworker\Kernel.cu">
+      <Filter>snpworker</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

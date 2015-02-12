@@ -1,8 +1,8 @@
 #include "Worker.h"
 #include <cuda_runtime.h>
 
-//#include "../ProtocolHandler.h"
-#include "../Packet.h"
+#include "../network/ProtocolHandler.h"
+#include "../network/Packet.h"
 
 #include <map>
 
@@ -162,7 +162,7 @@ void CWorker::RunLoop()
 {
     typedef tPacket::tData tData;
 
-    class CWorkerProtocolHandler// : public CProtocolHandler
+    class CWorkerProtocolHandler : public CProtocolHandler
     {
     public:
         CWorkerProtocolHandler()
@@ -201,17 +201,13 @@ void CWorker::RunLoop()
             }
         }
 
-        // todo: parent methods - remove placeholders later
-        void Tick() { Execute(); }
-        tPacket * GrabPacket() { return NULL; }
-
+    private:
         inline void Execute()
         {
             if (!m_pPacket)
                 m_pPacket = GrabPacket();
         }
 
-    private:
         typedef std::map<tPacket::tType, CWorker::tCommand> tCommandMap;
 
         tCommandMap    m_oCommandMap;

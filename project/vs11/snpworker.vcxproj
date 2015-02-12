@@ -19,6 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\external\pthreads-win32\include\pthread.h" />
+    <ClInclude Include="..\..\external\pthreads-win32\include\sched.h" />
+    <ClInclude Include="..\..\external\pthreads-win32\include\semaphore.h" />
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\Arg.h" />
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ArgException.h" />
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ArgTraits.h" />
@@ -43,15 +46,25 @@
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\Visitor.h" />
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\XorHandler.h" />
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ZshCompletionOutput.h" />
-    <ClInclude Include="..\..\source\mpicuda\snpworker\kernel.h" />
+    <ClInclude Include="..\..\source\mpicuda\network\DataTypes.h" />
+    <ClInclude Include="..\..\source\mpicuda\network\Packet.h" />
+    <ClInclude Include="..\..\source\mpicuda\network\ProtocolHandler.h" />
+    <ClInclude Include="..\..\source\mpicuda\network\Socket.h" />
+    <ClInclude Include="..\..\source\mpicuda\network\SocketAcceptor.h" />
+    <ClInclude Include="..\..\source\mpicuda\snpworker\Kernel.h" />
     <ClInclude Include="..\..\source\mpicuda\snpworker\Common.h" />
     <ClInclude Include="..\..\source\mpicuda\snpworker\Worker.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\source\mpicuda\snpworker\kernel.cu" />
+    <CudaCompile Include="..\..\source\mpicuda\snpworker\Kernel.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\source\mpicuda\snpworker\main.cpp" />
+    <ClCompile Include="..\..\source\mpicuda\network\Packet.cpp" />
+    <ClCompile Include="..\..\source\mpicuda\network\ProtocolHandler.cpp" />
+    <ClCompile Include="..\..\source\mpicuda\network\Socket.cpp" />
+    <ClCompile Include="..\..\source\mpicuda\network\SocketAcceptor.cpp" />
+    <ClCompile Include="..\..\source\mpicuda\snpworker\Main.cpp" />
+    <ClCompile Include="..\..\source\mpicuda\snpworker\Test.cpp" />
     <ClCompile Include="..\..\source\mpicuda\snpworker\Worker.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -120,28 +133,38 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\external\tclap-1.2.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\external\tclap-1.2.1\include;$(ProjectDir)..\..\external\pthreads-win32\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;fmpich2s.lib;mpe.lib;mpi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;fmpich2s.lib;mpe.lib;mpi.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\external\pthreads-win32\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent />
+    <PostBuildEvent>
+      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x86\pthreadVC2.dll" "$(OutDir)"
+echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
+copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\external\tclap-1.2.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\external\tclap-1.2.1\include;$(ProjectDir)..\..\external\pthreads-win32\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;irlog2rlog.lib;mpe.lib;mpi.lib;rlog.lib;TraceInput.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;irlog2rlog.lib;mpe.lib;mpi.lib;rlog.lib;TraceInput.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\external\pthreads-win32\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent />
     <PostBuildEvent>
-      <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
+      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x64\pthreadVC2.dll" "$(OutDir)"
+echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -154,15 +177,21 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\external\tclap-1.2.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\external\tclap-1.2.1\include;$(ProjectDir)..\..\external\pthreads-win32\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;fmpich2s.lib;mpe.lib;mpi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;fmpich2s.lib;mpe.lib;mpi.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\external\pthreads-win32\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x86\pthreadVC2.dll" "$(OutDir)"
+echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
+copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -172,17 +201,20 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\external\tclap-1.2.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\include;$(ProjectDir)..\..\external\tclap-1.2.1\include;$(ProjectDir)..\..\external\pthreads-win32\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;irlog2rlog.lib;mpe.lib;mpi.lib;rlog.lib;TraceInput.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;irlog2rlog.lib;mpe.lib;mpi.lib;rlog.lib;TraceInput.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\external\pthreads-win32\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent />
     <PostBuildEvent>
-      <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
+      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x64\pthreadVC2.dll" "$(OutDir)"
+echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

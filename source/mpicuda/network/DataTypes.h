@@ -37,18 +37,18 @@ template <class TYPE> finline TYPE max2(TYPE x,TYPE y) { return ((x)>(y)?(x):(y)
 
 finline void LogMessage(int iLevel, const char* sFormat, ...)
 {
-	if(iLevel > LOG_LEVEL)
-		return;
+    if(iLevel > LOG_LEVEL)
+        return;
 
-	va_list args;
-	va_start(args, sFormat);
-	// vprintf(sFormat, args);
+    va_list args;
+    va_start(args, sFormat);
+    // vprintf(sFormat, args);
 
-	char sMessage[1024];
-	vsnprintf(sMessage, 1024, sFormat, args);
-	std::cout << sMessage << std::endl;
+    char sMessage[1024];
+    vsnprintf(sMessage, 1024, sFormat, args);
+    std::cout << sMessage << std::endl;
 
-	va_end(args);
+    va_end(args);
 }
 
 #ifdef WIN32
@@ -60,21 +60,21 @@ finline void LogMessage(int iLevel, const char* sFormat, ...)
 finline void msleep(int milliseconds)
 {
 #ifdef WIN32
-	Sleep(milliseconds);
+    Sleep(milliseconds);
 #else // WIN32
-	usleep(static_cast<useconds_t>(milliseconds) * 1000);
+    usleep(static_cast<useconds_t>(milliseconds) * 1000);
 #endif // WIN32
 }
 
 #define LOG_MESSAGE LogMessage
 
 #ifndef WIN32
-#define HIBYTE(w)				((BYTE)(((WORD)(w) >> 8) & 0xFF))
-#define LOBYTE(w)				((BYTE)(w))
-#define HIWORD(dw)				((WORD)((((DWORD)(dw)) >> 16) & 0xFFFF))
-#define LOWORD(dw)				((WORD)(DWORD)(dw))
-#define MAKEWORD(low, hi)		((WORD)(((BYTE)(low)) | (((WORD)((BYTE)(hi))) << 8)))
-#define MAKEDWORD(low, hi)		(DWORD)((low) | ((hi) << 16))
+#define HIBYTE(w)                ((BYTE)(((WORD)(w) >> 8) & 0xFF))
+#define LOBYTE(w)                ((BYTE)(w))
+#define HIWORD(dw)                ((WORD)((((DWORD)(dw)) >> 16) & 0xFFFF))
+#define LOWORD(dw)                ((WORD)(DWORD)(dw))
+#define MAKEWORD(low, hi)        ((WORD)(((BYTE)(low)) | (((WORD)((BYTE)(hi))) << 8)))
+#define MAKEDWORD(low, hi)        (DWORD)((low) | ((hi) << 16))
 #endif // !WIN32
 
 #endif // _DATATYPES_H_
