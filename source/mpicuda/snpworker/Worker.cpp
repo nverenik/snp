@@ -1,10 +1,13 @@
 #include "Worker.h"
-#include <cuda_runtime.h>
 
 #include "../network/ProtocolHandler.h"
 #include "../network/Packet.h"
+#include "../network/RenameMe.h"
 
 #include <map>
+
+#include <cuda_runtime.h>
+#include "Kernel.h"
 
 NS_SNP_BEGIN
 
@@ -22,6 +25,10 @@ bool CWorker::IsCUDASupported()
 CWorker::CWorker(MPI_Comm oCommunicator, int32 iHostRank)
     : m_oCommunicator(oCommunicator)
     , m_iHostRank(iHostRank)
+    , m_bShouldExit(false)
+    , m_iNodeIndex(kCellNotFound)
+    , m_iDeviceIndex(kCellNotFound)
+    , m_iCellIndex(kCellNotFound)
 {
     MPI_Comm_size(m_oCommunicator, &m_iGroupSize);
     MPI_Comm_rank(m_oCommunicator, &m_iRank);
@@ -60,7 +67,7 @@ bool CWorker::Init()
 
     // threat device info struct as raw array of bytes
     MPI_Datatype iDeviceInfoType;
-    MPI_Type_contiguous(sizeof(snpDeviceInfo), MPI_BYTE, &iDeviceInfoType);
+    MPI_Type_contiguous(sizeof(tDeviceInfo), MPI_BYTE, &iDeviceInfoType);
     MPI_Type_commit(&iDeviceInfoType);
 
     if (IsHost())
@@ -85,18 +92,18 @@ bool CWorker::Init()
     if (IsHost() && GetGroupSize() > 1)
     {
         // receive information on the host side
-        std::vector<MPI_Request> apRequests;
+        std::vector<MPI_Request> aRequests;
         for (int32 iNodeRank = 0; iNodeRank < GetGroupSize(); iNodeRank++)
         {
             if (iNodeRank == GetHostRank())
                 continue;
 
             // using non blocking receiving
-            MPI_Request pRequest = 0;
-            MPI_Irecv(&m_oSystemInfo[iNodeRank].front(), m_oSystemInfo[iNodeRank].size(), iDeviceInfoType, iNodeRank, 0, GetCommunicator(), &pRequest);
-            apRequests.push_back(pRequest);
+            MPI_Request iRequest = 0;
+            MPI_Irecv(&m_oSystemInfo[iNodeRank].front(), m_oSystemInfo[iNodeRank].size(), iDeviceInfoType, iNodeRank, 0, GetCommunicator(), &iRequest);
+            aRequests.push_back(iRequest);
         }
-        MPI_Waitall(apRequests.size(), &apRequests.front(), MPI_STATUS_IGNORE);
+        MPI_Waitall(aRequests.size(), &aRequests.front(), MPI_STATUS_IGNORE);
     }
 
     MPI_Type_free(&iDeviceInfoType);
@@ -113,7 +120,7 @@ bool CWorker::PrintSystemInfo() const
         printf("\n");
         printf("=============== Node #%d ===============\n", iNodeRank);
 
-        const snpNodeInfo &roNodeInfo = m_oSystemInfo[iNodeRank];
+        const tNodeInfo &roNodeInfo = m_oSystemInfo[iNodeRank];
         for (int32 iDeviceIndex = 0; iDeviceIndex < roNodeInfo.size(); iDeviceIndex++)
         {
             const cudaDeviceProp &roDeviceProps = roNodeInfo[iDeviceIndex];
@@ -156,86 +163,38 @@ bool CWorker::PrintSystemInfo() const
     //printf("   Max threads: %d\n", iDeviceCount * roDeviceProps.maxGridSize[0] * roDeviceProps.maxThreadsDim[0]);                    // Logical limit
     //printf("   Memory for Min: %d\n", roDeviceProps.totalGlobalMem / (roDeviceProps.multiProcessorCount * roDeviceProps.maxThreadsPerMultiProcessor));
     //printf("   Memory for Max: %d\n", roDeviceProps.totalGlobalMem / (roDeviceProps.maxGridSize[0] * roDeviceProps.maxThreadsDim[0]));
+    return true;
 }
 
-void CWorker::RunLoop()
+void CWorker::RunLoop(CProtocolHandler *pHandler)
 {
     typedef tPacket::tData tData;
+    typedef std::map<tPacket::tType, CWorker::tCommand> tCommandMap;
 
-    class CWorkerProtocolHandler : public CProtocolHandler
-    {
-    public:
-        CWorkerProtocolHandler()
-            : m_pPacket(NULL)
-        {
-            m_oCommandMap[tPacket::tType_Startup]   = CWorker::tCommand_Startup;
-            m_oCommandMap[tPacket::tType_Exec]      = CWorker::tCommand_Exec;
-            m_oCommandMap[tPacket::tType_Read]      = CWorker::tCommand_Read;
-            m_oCommandMap[tPacket::tType_Shutdown]  = CWorker::tCommand_Shutdown;
-        }
+    tCommandMap oCommandMap;
+    oCommandMap[tPacket::tType_RequestStartup]  = CWorker::tCommand_Startup;
+    oCommandMap[tPacket::tType_RequestExec]     = CWorker::tCommand_Exec;
+    oCommandMap[tPacket::tType_RequestRead]     = CWorker::tCommand_Read;
+    oCommandMap[tPacket::tType_RequestShutdown] = CWorker::tCommand_Shutdown;
 
-        virtual ~CWorkerProtocolHandler()
-        {
-            if (m_pPacket)
-                delete m_pPacket;
-        }
-
-        inline tCommand ReadCommand() const
-        {
-            if (!m_pPacket || !m_oCommandMap.count(m_pPacket->m_eType))
-                return CWorker::tCommand_Idle;
-            return m_oCommandMap.at(m_pPacket->m_eType);
-        }
-
-        inline tData * ReadData() const
-        {
-            return (m_pPacket) ? &m_pPacket->m_oData : NULL;
-        }
-
-        inline void NextCommand()
-        {
-            if (m_pPacket)
-            {
-                delete m_pPacket;
-                m_pPacket = NULL;
-            }
-        }
-
-    private:
-        inline void Execute()
-        {
-            if (!m_pPacket)
-                m_pPacket = GrabPacket();
-        }
-
-        typedef std::map<tPacket::tType, CWorker::tCommand> tCommandMap;
-
-        tCommandMap    m_oCommandMap;
-        tPacket        *m_pPacket;
-    };
-
-    // only host works with the socket
-    CWorkerProtocolHandler *pHandler = IsHost() ? new CWorkerProtocolHandler() : NULL;
-    while(true)
+    while(!m_bShouldExit)
     {
         // here the current command with parameters
         tCommand eCommand = tCommand_Idle;
-        tData *pData = NULL;
+        tData oData;
 
-        // host should initialize them
+        // host should initialize them...
         if (IsHost())
         {
-            // using data received from the main app
-            while(tCommand_Idle == (eCommand = pHandler->ReadCommand()))
-            {
-                msleep(0);
-                pHandler->Tick();
-            }
-            pData = pHandler->ReadData();
+            //...using data received from the main app
+            tPacket oPacket = pHandler->Read(); // blocking method
+            assert(oCommandMap.count(oPacket.m_eType) > 0);
+            eCommand = oCommandMap[oPacket.m_eType];
+            oData = oPacket.m_oData;
         }
 
-        assert(eCommand != tCommand_Idle && pData);
-        //LOG_MESSAGE( 3, "Processing packet \"%s\"", pPacket->ToString().c_str() );
+        assert(eCommand != tCommand_Idle);
+        LOG_MESSAGE(3, "Processing command %d", eCommand);
 
         // broadcast command to all mpi nodes
         MPI_Bcast(&eCommand, 1, MPI_INT, GetHostRank(), GetCommunicator());
@@ -244,7 +203,16 @@ void CWorker::RunLoop()
         {
             case tCommand_Startup:
             {
-                Startup();
+                bool bResult = Startup(oData.asRequestStartup.m_uiCellSize,
+                    oData.asRequestStartup.m_uiCellsPerPU,
+                    oData.asRequestStartup.m_uiNumberOfPU);
+                if (IsHost())
+                {
+                    tPacket oPacket;
+                    oPacket.m_eType = tPacket::tType_ResponseStartup;
+                    oPacket.m_oData.asResponseStartup.m_bResult = bResult;
+                    pHandler->Write(&oPacket);
+                }
                 break;
             };
             
@@ -262,32 +230,219 @@ void CWorker::RunLoop()
 
             case tCommand_Shutdown:
             {
-                Shutdown();
+                bool bResult = Shutdown();
+                if (IsHost())
+                {
+                    tPacket oPacket;
+                    oPacket.m_eType = tPacket::tType_ResponseShutdown;
+                    oPacket.m_oData.asResponseShutdown.m_bResult = bResult;
+                    pHandler->Write(&oPacket);
+                }
+
+                // break main loop
+                m_bShouldExit = true;
+                LOG_MESSAGE(1, "System shutdown.");
                 break;
             };
 
             default: break;
         }
-
-        // release current packet before the next one
-        pHandler->NextCommand();
     }
-
-    if (pHandler)
-    {
-        delete pHandler;
-        pHandler = NULL;
-    }    
 }
 
-bool CWorker::Startup()
+bool CWorker::Startup(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU)
 {
-    return false;
+    assert(!d_aMemory.size());
+    assert(!d_aInstruction.size());
+    assert(!d_aOutput.size());
+
+    // Find the configuration for GPUs
+    tSystemConfig oSystemConfig;
+    oSystemConfig.resize(m_oSystemInfo.size());
+
+    // (!)Assume that each device (GPU) is used maximum only by only one node
+    if (IsHost())
+    {
+        // 1. number of blocks is multiple of multiprocessors amount
+        // 2. as number of threads per block use the maximum
+        uint32 uiNumberOfThreadsPerIteration = 0;
+        for (uint32 iNodeIndex = 0; iNodeIndex < m_oSystemInfo.size(); iNodeIndex++)
+        {
+            const tNodeInfo &roNodeInfo = m_oSystemInfo[iNodeIndex];
+            for (uint32 iDeviceIndex = 0; iDeviceIndex < roNodeInfo.size(); iDeviceIndex++)
+            {
+                // for each iteration add number of threads equals to what we obtain if add
+                // 1 block for each multi processor and use maximum threads in this block
+                uiNumberOfThreadsPerIteration += 
+                    roNodeInfo[iDeviceIndex].multiProcessorCount *
+                    roNodeInfo[iDeviceIndex].maxThreadsDim[0];
+            }
+        }
+
+        // find the minimum configuration which covers requested memory volume
+        uint32 uiMultiplier = uint32(ceilf((float)uiNumberOfPU / uiNumberOfThreadsPerIteration));
+        for (uint32 iNodeIndex = 0; iNodeIndex < oSystemConfig.size(); iNodeIndex++)
+        {
+            tNodeInfo &roNodeInfo = m_oSystemInfo[iNodeIndex];
+            tNodeConfig &roNodeConfig = oSystemConfig[iNodeIndex];
+            roNodeConfig.resize(roNodeInfo.size());
+
+            for (uint32 iDeviceIndex = 0; iDeviceIndex < roNodeConfig.size(); iDeviceIndex++)
+            {
+                tDeviceConfig &roDeviceConfig = roNodeConfig[iDeviceIndex];
+                roDeviceConfig.m_uiCellDim = uiCellSize;
+                roDeviceConfig.m_uiThreadDim = uiCellsPerPU;
+                roDeviceConfig.m_uiBlockDim = roNodeInfo[iDeviceIndex].maxThreadsDim[0];
+                roDeviceConfig.m_uiGridDim = roNodeInfo[iDeviceIndex].multiProcessorCount * uiMultiplier;
+            }
+        }
+    }
+
+    // send configurations to each process, prepare receiving buffer
+    const uint32 uiNumberOfLocalDevices = uint32(m_oNodeInfo.size());
+    m_oNodeConfig.clear();
+    m_oNodeConfig.resize(uiNumberOfLocalDevices);
+
+    // threat device info struct as raw array of bytes
+    MPI_Datatype iDeviceConfigType;
+    MPI_Type_contiguous(sizeof(tDeviceConfig), MPI_BYTE, &iDeviceConfigType);
+    MPI_Type_commit(&iDeviceConfigType);
+
+    if (!IsHost())
+    {
+        // receive current node config from the host
+        MPI_Recv(&m_oNodeConfig.front(), m_oNodeConfig.size(), iDeviceConfigType, GetHostRank(), 0, GetCommunicator(), MPI_STATUS_IGNORE);
+    }
+
+    if (IsHost())
+    {
+        // don't send host data to itself
+        m_oNodeConfig = oSystemConfig[GetHostRank()];
+        // send data for each node separately
+        if (GetGroupSize() > 1)
+        {
+            std::vector<MPI_Request> aRequests;
+            for (int32 iNodeRank = 0; iNodeRank < GetGroupSize(); iNodeRank++)
+            {
+                if (iNodeRank == GetHostRank())
+                    continue;
+                
+                // using non blocking method
+                MPI_Request iRequest = 0;
+                MPI_Isend(&oSystemConfig[iNodeRank].front(), oSystemConfig[iNodeRank].size(), iDeviceConfigType, iNodeRank, 0, GetCommunicator(), &iRequest);
+                aRequests.push_back(iRequest);
+            }
+            MPI_Waitall(aRequests.size(), &aRequests.front(), MPI_STATUS_IGNORE);
+        }
+    }
+
+    MPI_Type_free(&iDeviceConfigType);
+
+    // allocate processor memory separately for each GPU
+    d_aMemory.resize(uiNumberOfLocalDevices);
+    d_aInstruction.resize(uiNumberOfLocalDevices);
+    d_aOutput.resize(uiNumberOfLocalDevices);
+
+    h_aOutput.resize(uiNumberOfLocalDevices);
+    h_aCell.resize(uiNumberOfLocalDevices);
+
+    cudaError_t eErrorCode = cudaSuccess;
+    for (uint32 iDeviceIndex = 0; iDeviceIndex < uiNumberOfLocalDevices; iDeviceIndex++)
+    {
+        eErrorCode = cudaSetDevice(iDeviceIndex);
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        const tDeviceConfig &roDeviceConfig = m_oNodeConfig[iDeviceIndex];
+        const uint32 uiMemorySize =
+            roDeviceConfig.m_uiCellDim *
+            roDeviceConfig.m_uiThreadDim *
+            roDeviceConfig.m_uiBlockDim *
+            roDeviceConfig.m_uiGridDim;
+
+        LOG_MESSAGE(3, "Configure device #%d", iDeviceIndex);
+        LOG_MESSAGE(3, "   Cell dim = %u", roDeviceConfig.m_uiCellDim);
+        LOG_MESSAGE(3, "   Thread dim = %u", roDeviceConfig.m_uiThreadDim);
+        LOG_MESSAGE(3, "   Block dim = %u", roDeviceConfig.m_uiBlockDim);
+        LOG_MESSAGE(3, "   Grid dim = %u", roDeviceConfig.m_uiGridDim);
+        LOG_MESSAGE(3, "Memory allocated = %lu", uiMemorySize * sizeof(uint32));
+
+        eErrorCode = cudaMalloc((void**)&d_aMemory[iDeviceIndex], uiMemorySize * sizeof(uint32));
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        // TODO: should we place instruction and output arrays into shared memory or something for speadup?
+        eErrorCode = cudaMalloc((void**)&d_aInstruction[iDeviceIndex], 4 * roDeviceConfig.m_uiCellDim * sizeof(uint32));
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        eErrorCode = cudaMalloc((void**)&d_aOutput[iDeviceIndex], roDeviceConfig.m_uiBlockDim * roDeviceConfig.m_uiGridDim * sizeof(int32));
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        // allocate buffer memory for output array
+        h_aOutput[iDeviceIndex] = new int32[roDeviceConfig.m_uiBlockDim * roDeviceConfig.m_uiGridDim];
+        h_aCell[iDeviceIndex] = new uint32[roDeviceConfig.m_uiCellDim];
+    }
+
+    if (IsHost())
+    {
+        uint32 uiTotalNumberOfPU = 0;
+        for (uint32 iNodeIndex = 0; iNodeIndex < oSystemConfig.size(); iNodeIndex++)
+        {
+            const tNodeConfig &roNodeConfig = oSystemConfig[iNodeIndex];
+            for (uint32 iDeviceIndex = 0; iDeviceIndex < roNodeConfig.size(); iDeviceIndex++)
+            {
+                uiTotalNumberOfPU +=
+                    roNodeConfig[iDeviceIndex].m_uiBlockDim *
+                    roNodeConfig[iDeviceIndex].m_uiGridDim;
+            }
+        }
+        LOG_MESSAGE(3, "Total number of PU: %u", uiTotalNumberOfPU);
+    }
+
+    MPI_Barrier(GetCommunicator());
+    return true;
 }
 
 bool CWorker::Shutdown()
 {
-    return false;
+    cudaError_t eErrorCode = cudaSuccess;
+    for (uint32 iDeviceIndex = 0; iDeviceIndex < m_oNodeConfig.size(); iDeviceIndex++)
+    {
+        eErrorCode = cudaSetDevice(iDeviceIndex);
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        eErrorCode = cudaFree(d_aMemory[iDeviceIndex]);
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        eErrorCode = cudaFree(d_aInstruction[iDeviceIndex]);
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        eErrorCode = cudaFree(d_aOutput[iDeviceIndex]);
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        eErrorCode = cudaDeviceReset();
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        delete h_aOutput[iDeviceIndex];
+        delete h_aCell[iDeviceIndex];
+    }
+
+    d_aMemory.clear();
+    d_aInstruction.clear();
+    d_aOutput.clear();
+
+    h_aOutput.clear();
+    h_aCell.clear();
+
+    MPI_Barrier(GetCommunicator());
+    return true;
 }
 
 bool CWorker::Exec()

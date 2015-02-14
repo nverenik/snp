@@ -35,25 +35,21 @@ bool tPacket::Extract(std::vector<BYTE>& raBuffer)
     if(dwPacketType >= tType_NUMTYPES)
     {
         LOG_MESSAGE(1, "Got a package with wrong type (%d)!", dwPacketType);
-
-        pop_front( raBuffer, sizeof(WORD) );
-
+        pop_front(raBuffer, sizeof(WORD));
         return false;
     }
 
     // 3: Extract data size
     DWORD dwDataSize = ExtractDword( &*(raBuffer.begin() + sizeof(WORD) + sizeof(DWORD)) );
-    if(dwDataSize > PACKET_MAX_SIZE)
+    if (dwDataSize > PACKET_MAX_SIZE)
     {
         LOG_MESSAGE(1, "Got a package with wrong data size (%d)!", dwDataSize);
-
-        pop_front( raBuffer, sizeof(WORD) );
-
+        pop_front(raBuffer, sizeof(WORD));
         return false;
     }
 
     // 4: Extract data block
-    if( raBuffer.size() < iMinPacketSize + dwDataSize )
+    if (raBuffer.size() < iMinPacketSize + dwDataSize)
         return false;
 
     // 5: Extract & check Crc32
@@ -69,24 +65,30 @@ bool tPacket::Extract(std::vector<BYTE>& raBuffer)
     }*/
 
     m_eType = (tType)dwPacketType;
-    memcpy(m_oData.m_oU.m_aByteData, &*(raBuffer.begin() + sizeof(WORD) + sizeof(DWORD) + sizeof(DWORD)), dwDataSize);
+    memcpy(m_oData._raw, &*(raBuffer.begin() + sizeof(WORD) + sizeof(DWORD) + sizeof(DWORD)), dwDataSize);
 
     pop_front(raBuffer, iMinPacketSize + dwDataSize);
-
     return true;
 }
 
-std::vector<BYTE> tPacket::Pack()
+std::vector<BYTE> tPacket::Pack() const
 {
     std::vector<BYTE> aPacket;
 
     DWORD dwDataSize = 0;
     switch(m_eType)
     {
-    case tType_Startup: dwDataSize = sizeof(m_oData.m_oU.m_oDataStartup); break;
-    case tType_Exec: dwDataSize = sizeof(m_oData.m_oU.m_oDataExec); break;
-    case tType_Read: dwDataSize = sizeof(m_oData.m_oU.m_oDataRead); break;
-    default: break;
+        case tType_RequestStartup:      dwDataSize = sizeof(m_oData.asRequestStartup); break;
+        case tType_RequestShutdown:     dwDataSize = sizeof(m_oData.asRequestShutdown); break;
+        case tType_RequestExec:         dwDataSize = sizeof(m_oData.asRequestExec); break;
+        case tType_RequestRead:         dwDataSize = sizeof(m_oData.asRequestRead); break;
+
+        case tType_ResponseStartup:     dwDataSize = sizeof(m_oData.asResponseStartup); break;
+        case tType_ResponseShutdown:    dwDataSize = sizeof(m_oData.asResponseShutdown); break;
+        case tType_ResponseExec:        dwDataSize = sizeof(m_oData.asResponseExec); break;
+        case tType_ResponseRead:        dwDataSize = sizeof(m_oData.asResponseRead); break;
+
+        default: break;
     }
 
     DWORD dwCrc32 = 0;
@@ -94,7 +96,7 @@ std::vector<BYTE> tPacket::Pack()
     AppendWord(aPacket, PACKET_STARTER);
     AppendDword(aPacket, (DWORD)m_eType);
     AppendDword(aPacket, dwDataSize);
-    aPacket.insert( aPacket.end(), m_oData.m_oU.m_aByteData, m_oData.m_oU.m_aByteData + dwDataSize );
+    aPacket.insert( aPacket.end(), m_oData._raw, m_oData._raw + dwDataSize );
     AppendDword(aPacket, dwCrc32);
 
     return aPacket;
@@ -137,13 +139,12 @@ DWORD tPacket::ExtractDword(const BYTE *pDword)
 
 BYTE* tPacket::pop_front(std::vector<BYTE>& raBuffer, DWORD dwSize)
 {
-    if( dwSize > raBuffer.size() )
+    if (dwSize > raBuffer.size())
     {
-        assert( dwSize <= raBuffer.size() );
+        assert(dwSize <= raBuffer.size());
         dwSize = raBuffer.size();
     }
 
-    raBuffer.erase( raBuffer.begin(), raBuffer.begin() + dwSize );
-
-    return &(raBuffer.front());
+    raBuffer.erase(raBuffer.begin(), raBuffer.begin() + dwSize);
+    return (raBuffer.size() > 0) ? &(raBuffer.front()) : NULL;
 }

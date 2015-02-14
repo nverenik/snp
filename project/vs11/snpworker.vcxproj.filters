@@ -129,6 +129,9 @@
     <ClInclude Include="..\..\source\mpicuda\network\SocketAcceptor.h">
       <Filter>network</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\RenameMe.h">
+      <Filter>network</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\mpicuda\snpworker\Worker.cpp">
@@ -150,6 +153,9 @@
       <Filter>network</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\mpicuda\network\SocketAcceptor.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\network\RenameMe.cpp">
       <Filter>network</Filter>
     </ClCompile>
   </ItemGroup>

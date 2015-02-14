@@ -1,6 +1,7 @@
 #ifndef _PACKET_H_
 #define _PACKET_H_
 
+#include <snp/snpMacros.h>
 #include "DataTypes.h"
 
 #define PACKET_STARTER    0xFFFF
@@ -12,11 +13,15 @@ struct tPacket
 
     enum tType
     {
-        //tType_GetSystemInfo = 0,
-        tType_Startup = 0,
-        tType_Exec,
-        tType_Read,
-        tType_Shutdown,
+        tType_RequestStartup = 0,
+        tType_RequestExec,
+        tType_RequestRead,
+        tType_RequestShutdown,
+
+        tType_ResponseStartup,
+        tType_ResponseExec,
+        tType_ResponseRead,
+        tType_ResponseShutdown,
 
         tType_NUMTYPES
     };
@@ -25,35 +30,73 @@ struct tPacket
     {
         union
         {
-            BYTE m_aByteData[1024];    // TODO: Specify MAX possible data size here
+            BYTE _raw[1024];    // TODO: Specify MAX possible data size here
 
-            struct tDataStartup
+            struct
             {
-                int m_iGPUs;        // Total number of GPUs to use
-                int m_iPEs;            // Total number of PEs to use
-                int m_iCells;        // Number of cells per PE
-                int m_iCellSize;    // Cell size in bytes
-            } m_oDataStartup;
+                uint32  m_uiCellSize;
+                uint32  m_uiCellsPerPU;
+                uint32  m_uiNumberOfPU;
+            } asRequestStartup;
 
-            struct tDataExec
+            struct
+            {
+                bool m_bResult;
+            } asResponseStartup;
+
+            struct
+            {
+            } asRequestShutdown;
+
+            struct
+            {
+                bool m_bResult;
+            } asResponseShutdown;
+
+            struct
             {
                 int m_iTmp;            // TODO: specify valid data format here
-            } m_oDataExec;
+            } asRequestExec;
 
-            struct tDataRead
+            struct
+            {
+            } asResponseExec;
+
+            struct
             {
                 int m_iTmp;            // TODO: specify valid data format here
-            } m_oDataRead;
-        } m_oU;
+            } asRequestRead;
+
+            struct
+            {
+            } asResponseRead;
+        };
     };
 
     tType m_eType;
     tData m_oData;
 
     bool Extract(std::vector<BYTE>& raBuffer);
-    std::vector<BYTE> Pack();
+    std::vector<BYTE> Pack() const;
 
-    std::string ToString() const { return "Packet Name"; }
+    std::string ToString() const
+    {
+        switch(m_eType)
+        {
+            case tType_RequestStartup:      return "Request Startup";
+            case tType_RequestExec:         return "Request Exec";
+            case tType_RequestRead:         return "Request Read";
+            case tType_RequestShutdown:     return "Request Shutdown";
+
+            case tType_ResponseStartup:     return "Response Startup";
+            case tType_ResponseExec:        return "Response Exec";
+            case tType_ResponseRead:        return "Response Read";
+            case tType_ResponseShutdown:    return "Response Shutdown";
+
+            default: break;
+        }
+        return "Undefined";
+    }
 
     static void AppendByte(std::vector<BYTE>& raBuffer, BYTE btValue);
     static void AppendWord(std::vector<BYTE>& raBuffer, WORD wValue);

@@ -7,6 +7,8 @@
 #include <vector>
 #include <snp/snpMacros.h>
 
+class CProtocolHandler;
+
 NS_SNP_BEGIN
 
 class CWorker
@@ -18,8 +20,7 @@ public:
     // collect information about mpi nodes
     bool Init();
     bool PrintSystemInfo() const;
-
-    void RunLoop();
+    void RunLoop(CProtocolHandler *pHandler);
 
     inline MPI_Comm GetCommunicator() const { return m_oCommunicator; }
     inline int32    GetGroupSize() const {return m_iGroupSize; }
@@ -28,9 +29,13 @@ public:
     inline bool     IsHost() const { return m_bHost; }
 
 private:
-    typedef cudaDeviceProp snpDeviceInfo;
-    typedef std::vector<snpDeviceInfo> snpNodeInfo;
-    typedef std::vector<snpNodeInfo> snpSystemInfo;
+    typedef cudaDeviceProp tDeviceInfo;
+    typedef std::vector<tDeviceInfo> tNodeInfo;
+    typedef std::vector<tNodeInfo> tSystemInfo;
+
+    struct tDeviceConfig;
+    typedef std::vector<tDeviceConfig> tNodeConfig;
+    typedef std::vector<tNodeConfig> tSystemConfig;
 
     enum tCommand
     {
@@ -42,7 +47,17 @@ private:
         tCommand_Read,
     };
 
-    bool Startup(/*int32 iRank, const SystemInfo &roSystemInfo, uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU*/);
+    struct tDeviceConfig
+    {
+        uint32    m_uiGridDim;    // number of blocks (1 .. 65536) within grid
+        uint32    m_uiBlockDim;    // number of threads (1 .. 1024) within block
+        uint32    m_uiThreadDim;    // number of cells within thread
+        uint32    m_uiCellDim;    // number of uint32 within cell
+    };
+
+    void Tick();
+
+    bool Startup(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU);
     bool Shutdown();
     bool Exec(/*int32 iRank, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction*/);
     bool Read(/*int32 iRank, uint32 *pBitfield*/);
@@ -51,15 +66,33 @@ private:
     const MPI_Comm  m_oCommunicator;
     const int32     m_iHostRank;
 
-    // general MPI process info
-    char            m_pszProcessorName[MPI_MAX_PROCESSOR_NAME];
-    int32           m_iGroupSize;
-    int32           m_iRank;
-    bool            m_bHost;
-    snpNodeInfo     m_oNodeInfo;
-
     // host specific data
-    snpSystemInfo   m_oSystemInfo;
+    tSystemInfo     m_oSystemInfo;
+
+    // general MPI process info
+    char        m_pszProcessorName[MPI_MAX_PROCESSOR_NAME];
+    int32       m_iGroupSize;
+    int32       m_iRank;
+    bool        m_bHost;
+    tNodeInfo   m_oNodeInfo;    // info about all available devices in the current node
+    tNodeConfig m_oNodeConfig;  // configuration for each device in the current node
+    bool        m_bShouldExit;
+
+    // pointers to the memory allocated on devices
+    std::vector<uint32 *>   d_aMemory;
+    std::vector<uint32 *>   d_aInstruction;
+    std::vector<int32 *>    d_aOutput;
+
+    // pre-allocated buffers used when working with kernel
+    std::vector<int32 *>    h_aOutput;
+    std::vector<uint32 *>   h_aCell;
+
+    // Result of ther last performed Exec() command is the index of device
+    // and index of the cell inside its memory pointing to the first matched
+    // cell during instruction
+    int32   m_iNodeIndex;
+    int32   m_iDeviceIndex;
+    int32   m_iCellIndex;
 };
 
 NS_SNP_END

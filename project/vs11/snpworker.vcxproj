@@ -49,6 +49,7 @@
     <ClInclude Include="..\..\source\mpicuda\network\DataTypes.h" />
     <ClInclude Include="..\..\source\mpicuda\network\Packet.h" />
     <ClInclude Include="..\..\source\mpicuda\network\ProtocolHandler.h" />
+    <ClInclude Include="..\..\source\mpicuda\network\RenameMe.h" />
     <ClInclude Include="..\..\source\mpicuda\network\Socket.h" />
     <ClInclude Include="..\..\source\mpicuda\network\SocketAcceptor.h" />
     <ClInclude Include="..\..\source\mpicuda\snpworker\Kernel.h" />
@@ -61,6 +62,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\source\mpicuda\network\Packet.cpp" />
     <ClCompile Include="..\..\source\mpicuda\network\ProtocolHandler.cpp" />
+    <ClCompile Include="..\..\source\mpicuda\network\RenameMe.cpp" />
     <ClCompile Include="..\..\source\mpicuda\network\Socket.cpp" />
     <ClCompile Include="..\..\source\mpicuda\network\SocketAcceptor.cpp" />
     <ClCompile Include="..\..\source\mpicuda\snpworker\Main.cpp" />
@@ -138,7 +140,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;fmpich2s.lib;mpe.lib;mpi.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;fmpich2s.lib;mpe.lib;mpi.lib;pthreadVC2.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\external\pthreads-win32\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />
@@ -158,7 +160,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;irlog2rlog.lib;mpe.lib;mpi.lib;rlog.lib;TraceInput.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;irlog2rlog.lib;mpe.lib;mpi.lib;rlog.lib;TraceInput.lib;pthreadVC2.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\external\pthreads-win32\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />
@@ -184,7 +186,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;fmpich2s.lib;mpe.lib;mpi.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;fmpich2s.lib;mpe.lib;mpi.lib;pthreadVC2.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\external\pthreads-win32\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -208,7 +210,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;irlog2rlog.lib;mpe.lib;mpi.lib;rlog.lib;TraceInput.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;cxx.lib;fmpich2.lib;fmpich2g.lib;irlog2rlog.lib;mpe.lib;mpi.lib;rlog.lib;TraceInput.lib;pthreadVC2.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\external\pthreads-win32\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent />

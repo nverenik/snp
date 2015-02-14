@@ -5,54 +5,12 @@ USING_NS_SNP;
 
 #include "../network/SocketAcceptor.h"
 #include "../network/ProtocolHandler.h"
+#include "../network/RenameMe.h"
 
-NS_SNP_BEGIN
-
-class CServerProtocolHandler: public CProtocolHandler
-{
-public:
-    CServerProtocolHandler()
-        : m_pPacket(NULL)
-    {}
-
-    virtual ~CServerProtocolHandler()
-    {
-        if (m_pPacket)
-            delete m_pPacket;
-    }
-
-    inline tPacket * GetPacket() const
-    {
-        return m_pPacket;
-    }
-    
-    inline void NextPacket()
-    {
-        if (m_pPacket)
-        {
-            delete m_pPacket;
-            m_pPacket = NULL;
-        }
-    }
-
-private:
-    inline void Execute()
-    {
-        if (!m_pPacket)
-            m_pPacket = GrabPacket();
-    }
-
-    tPacket *m_pPacket;
-};
-
-NS_SNP_END
-
-static bool Startup(CServerProtocolHandler *pHandler, uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU);
-static bool Shutdown(CServerProtocolHandler *pHandler);
-static bool Exec(CServerProtocolHandler *pHandler, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction);
-static bool Read(CServerProtocolHandler *pHandler, uint32 *pBitfield);
-
-static tPacket * WaitPacket(CProtocolHandler *pHandler);
+static bool Startup(CProtocolHandler *pHandler, uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU);
+static bool Shutdown(CProtocolHandler *pHandler);
+static bool Exec(CProtocolHandler *pHandler, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction);
+static bool Read(CProtocolHandler *pHandler, uint32 *pBitfield);
 
 extern "C" void * ThreadServerF(void *pArg)
 {
@@ -65,8 +23,7 @@ extern "C" void * ThreadServerF(void *pArg)
     LOG_MESSAGE(1, "[test-server] Connection established...");
     int iSocketFD = oSocketAcceptor.GetAcceptedSocket();
 
-    snp::CServerProtocolHandler oProtocolHandler;
-    oProtocolHandler.InitSocket(iSocketFD);
+    CProtocolHandler oProtocolHandler(iSocketFD);
     LOG_MESSAGE(1, "[test-server] Socket created.");
     
     //
@@ -78,7 +35,7 @@ extern "C" void * ThreadServerF(void *pArg)
     const uint32 uiNumberOfPU   = 10000;
     // todo: get these params via command line along with --test
 
-    LOG_MESSAGE(1, "[test-server] Starting system (uiCellSize=%d, uiCellsPerPU=%d, uiNumberOfPU=%d)...", uiCellSize, uiCellsPerPU, uiNumberOfPU);
+    LOG_MESSAGE(1, "[test-server] Starting system [%dx%dx%d]...", uiCellSize, uiCellsPerPU, uiNumberOfPU);
     Startup(&oProtocolHandler, uiCellSize, uiCellsPerPU, uiNumberOfPU);
 
     // initialize data with some random data
@@ -130,47 +87,37 @@ extern "C" void * ThreadServerF(void *pArg)
     return NULL;
 }
 
-static bool Startup(CServerProtocolHandler *pHandler, uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU)
+static bool Startup(CProtocolHandler *pHandler, uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU)
 {
-    //tPacket *pPacket = new tPacket();
-    //pPacket->m_eType = tPacket::tType_Startup;
-    //oProtocolHandler.AddOutgoingPacket(pPacket);
+    tPacket oRequest;
+    oRequest.m_eType = tPacket::tType_RequestStartup;
+    oRequest.m_oData.asRequestStartup.m_uiCellSize = uiCellSize;
+    oRequest.m_oData.asRequestStartup.m_uiCellsPerPU = uiCellsPerPU;
+    oRequest.m_oData.asRequestStartup.m_uiNumberOfPU = uiNumberOfPU;
+    pHandler->Write(&oRequest);
 
-    tPacket *pResponse = WaitPacket(pHandler);
-    bool bResult = false; // todo: handle response here
-    pHandler->NextPacket();
+    tPacket oResponse = pHandler->Read();
+    assert(oResponse.m_eType == tPacket::tType_ResponseStartup);
+    return oResponse.m_oData.asResponseStartup.m_bResult;
 }
 
-static bool Shutdown(CServerProtocolHandler *pHandler)
+static bool Shutdown(CProtocolHandler *pHandler)
 {
-    tPacket *pResponse = WaitPacket(pHandler);
-    bool bResult = false; // todo: handle response here
-    pHandler->NextPacket();
+    tPacket oRequest;
+    oRequest.m_eType = tPacket::tType_RequestShutdown;
+    pHandler->Write(&oRequest);
+
+    tPacket oResponse = pHandler->Read();
+    assert(oResponse.m_eType == tPacket::tType_ResponseShutdown);
+    return oResponse.m_oData.asResponseShutdown.m_bResult;
 }
 
-static bool Exec(CServerProtocolHandler *pHandler, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction)
+static bool Exec(CProtocolHandler *pHandler, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction)
 {
-    tPacket *pResponse = WaitPacket(pHandler);
-    bool bResult = false; // todo: handle response here
-    pHandler->NextPacket();
+    return false;
 }
 
-static bool Read(CServerProtocolHandler *pHandler, uint32 *pBitfield)
+static bool Read(CProtocolHandler *pHandler, uint32 *pBitfield)
 {
-    tPacket *pResponse = WaitPacket(pHandler);
-    bool bResult = false; // todo: handle response here
-    pHandler->NextPacket();
-}
-
-static tPacket * WaitPacket(CServerProtocolHandler *pHandler)
-{
-    if (!pHandler) return NULL;
-
-    tPacket *pPacket = NULL;
-    while(!(pPacket = pHandler->GetPacket()))
-    {
-        msleep(10);
-        pHandler->Tick();
-    }
-    return pPacket;
+    return false;
 }

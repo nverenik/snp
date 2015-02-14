@@ -11,30 +11,40 @@
 class CProtocolHandler
 {
 public:
-    CProtocolHandler();
+    CProtocolHandler(int iSocketFD);
     virtual ~CProtocolHandler();
-    void Tick();
-    void InitSocket(int iSocketFD);
-    void AddOutgoingPacket(tPacket* pPacket);
-
-protected:
-    tPacket* GrabPacket();
-
+    
+    void Write(tPacket *pPacket);
+    tPacket Read();
+    
 private:
     tSocket m_oSocket;
-    std::list<tPacket*> m_aInPacketBuffer;
-    std::list<tPacket*> m_aOutPacketBuffer;
 
-    fd_set m_oReadSet;
-    fd_set m_oWriteSet;
-    fd_set m_oErrorSet;
 
-    void Select();
-    void ReadWrite();
-    void Extract();
-    void Pack();
-    virtual void Execute() = 0;
 
+
+//    CProtocolHandler();
+//    virtual ~CProtocolHandler();
+//    void Tick();
+//    void InitSocket(int iSocketFD);
+//    void AddOutgoingPacket(tPacket* pPacket);
+//
+//
+//private:
+//    
+//    std::list<tPacket*> m_aInPacketBuffer;
+//    std::list<tPacket*> m_aOutPacketBuffer;
+//
+//    fd_set m_oReadSet;
+//    fd_set m_oWriteSet;
+//    fd_set m_oErrorSet;
+//
+//    void Select();
+//    void ReadWrite();
+//    void Extract();
+//    void Pack();
+//
+//    tPacket* GrabPacket();
 };
 
 #endif // _PROTOCOL_HANDLER_H_

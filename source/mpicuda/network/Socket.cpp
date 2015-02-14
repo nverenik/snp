@@ -1,4 +1,5 @@
 #include "Socket.h"
+#include "RenameMe.h"
 
 tSocket::tSocket()
 {
@@ -12,7 +13,7 @@ int tSocket::Read()
 
     int iReadResult = 0;
     int iReadSize = min2( SENDING_MAX_SIZE, SOCKET_IN_BUFFER_MAX_SIZE - (int)m_abtInBuffer.size() );
-    iReadResult = read(m_iSocketHandle, m_aReadBuffer, iReadSize);
+    iReadResult = ReadFromSocket(m_iSocketHandle, m_aReadBuffer, iReadSize);
 
     if(iReadResult == -1)
     {
@@ -31,7 +32,7 @@ int tSocket::Send()
     assert(m_bClosed == false);
 
     int iSendSize = min2( SENDING_MAX_SIZE, (int)m_abtOutBuffer.size() );
-    int iSendResult = write(m_iSocketHandle, &*(m_abtOutBuffer.begin()), iSendSize);
+    int iSendResult = WriteToSocket(m_iSocketHandle, &*(m_abtOutBuffer.begin()), iSendSize);
 
     if(iSendResult == -1)
     {
