@@ -26,6 +26,8 @@ CWorker::CWorker(MPI_Comm oCommunicator, int32 iHostRank)
     : m_oCommunicator(oCommunicator)
     , m_iHostRank(iHostRank)
     , m_bShouldExit(false)
+    , m_bRunning(false)
+    , m_uiCellSize(0)
     , m_iNodeIndex(kCellNotFound)
     , m_iDeviceIndex(kCellNotFound)
     , m_iCellIndex(kCellNotFound)
@@ -86,7 +88,7 @@ bool CWorker::Init()
     if (!IsHost())
     {
         // send current node information to the host
-        MPI_Send(&m_oNodeInfo.front(), m_oNodeInfo.size(), iDeviceInfoType, GetHostRank(), 0, GetCommunicator());
+        MPI_Send(&m_oNodeInfo.front(), (int32)m_oNodeInfo.size(), iDeviceInfoType, GetHostRank(), 0, GetCommunicator());
     }
 
     if (IsHost() && GetGroupSize() > 1)
@@ -100,10 +102,10 @@ bool CWorker::Init()
 
             // using non blocking receiving
             MPI_Request iRequest = 0;
-            MPI_Irecv(&m_oSystemInfo[iNodeRank].front(), m_oSystemInfo[iNodeRank].size(), iDeviceInfoType, iNodeRank, 0, GetCommunicator(), &iRequest);
+            MPI_Irecv(&m_oSystemInfo[iNodeRank].front(), (int32)m_oSystemInfo[iNodeRank].size(), iDeviceInfoType, iNodeRank, 0, GetCommunicator(), &iRequest);
             aRequests.push_back(iRequest);
         }
-        MPI_Waitall(aRequests.size(), &aRequests.front(), MPI_STATUS_IGNORE);
+        MPI_Waitall((int32)aRequests.size(), &aRequests.front(), MPI_STATUS_IGNORE);
     }
 
     MPI_Type_free(&iDeviceInfoType);
@@ -198,7 +200,7 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
         }
 
         assert(eCommand != tCommand_Idle);
-        LOG_MESSAGE(3, "Processing command %d", eCommand);
+        LOG_MESSAGE(5, "Processing command %d", eCommand);
 
         // broadcast command to all mpi nodes
         MPI_Bcast(&eCommand, 1, MPI_INT, GetHostRank(), GetCommunicator());
@@ -207,6 +209,7 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
         {
             case tCommand_Startup:
             {
+                assert(!m_bRunning);
                 bool bResult = Startup(
                     oData.asRequestStartup.m_uiCellSize,
                     oData.asRequestStartup.m_uiCellsPerPU,
@@ -219,12 +222,14 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
                     oPacket.m_oData.asResponseStartup.m_bResult = bResult;
                     pHandler->Write(&oPacket);
                 }
+                m_bRunning = bResult;
+                m_uiCellSize = oData.asRequestStartup.m_uiCellSize;
                 break;
             };
             
             case tCommand_Exec:
             {
-                assert(oDynamicData.size() > 0);
+                assert(m_bRunning && oDynamicData.size() > 0);
                 bool bResult = Exec(
                     oData.asRequestExec.m_bSingleCell,
                     oData.asRequestExec.m_eOperation,
@@ -242,12 +247,29 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
 
             case tCommand_Read:
             {
-                Read(NULL);
+                assert(m_bRunning && m_uiCellSize > 0);
+                std::vector<uint32> aOutput;
+                aOutput.resize(m_uiCellSize);
+
+                bool bResult = Read(&aOutput.front());
+                if (IsHost())
+                {
+                    tPacket oPacket;
+                    oPacket.m_eType = tPacket::tType_ResponseRead;
+                    oPacket.m_oData.asResponseRead.m_bResult = bResult;
+                    if (bResult)
+                    {
+                        oPacket.m_oDynamicData.resize(m_uiCellSize * sizeof(uint32));
+                        memcpy(&oPacket.m_oDynamicData.front(), &aOutput.front(), m_uiCellSize * sizeof(uint32));
+                    }
+                    pHandler->Write(&oPacket);
+                }
                 break;
             };
 
             case tCommand_Shutdown:
             {
+                assert(m_bRunning);
                 bool bResult = Shutdown();
                 if (IsHost())
                 {
@@ -258,7 +280,9 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
                 }
 
                 // break main loop
+                m_bRunning = false;
                 m_bShouldExit = true;
+
                 LOG_MESSAGE(1, "System shutdown.");
                 break;
             };
@@ -273,6 +297,9 @@ bool CWorker::Startup(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfP
     assert(!d_aMemory.size());
     assert(!d_aInstruction.size());
     assert(!d_aOutput.size());
+
+    assert(!h_aOutput.size());
+    assert(!h_aCell.size());
 
     // Find the configuration for GPUs
     tSystemConfig oSystemConfig;
@@ -329,7 +356,7 @@ bool CWorker::Startup(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfP
     if (!IsHost())
     {
         // receive current node config from the host
-        MPI_Recv(&m_oNodeConfig.front(), m_oNodeConfig.size(), iDeviceConfigType, GetHostRank(), 0, GetCommunicator(), MPI_STATUS_IGNORE);
+        MPI_Recv(&m_oNodeConfig.front(), (int32)m_oNodeConfig.size(), iDeviceConfigType, GetHostRank(), 0, GetCommunicator(), MPI_STATUS_IGNORE);
     }
 
     if (IsHost())
@@ -347,10 +374,10 @@ bool CWorker::Startup(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfP
                 
                 // using non blocking method
                 MPI_Request iRequest = 0;
-                MPI_Isend(&oSystemConfig[iNodeRank].front(), oSystemConfig[iNodeRank].size(), iDeviceConfigType, iNodeRank, 0, GetCommunicator(), &iRequest);
+                MPI_Isend(&oSystemConfig[iNodeRank].front(), (int32)oSystemConfig[iNodeRank].size(), iDeviceConfigType, iNodeRank, 0, GetCommunicator(), &iRequest);
                 aRequests.push_back(iRequest);
             }
-            MPI_Waitall(aRequests.size(), &aRequests.front(), MPI_STATUS_IGNORE);
+            MPI_Waitall((int32)aRequests.size(), &aRequests.front(), MPI_STATUS_IGNORE);
         }
     }
 
@@ -425,6 +452,13 @@ bool CWorker::Startup(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfP
 
 bool CWorker::Shutdown()
 {
+    assert(d_aMemory.size());
+    assert(d_aInstruction.size());
+    assert(d_aOutput.size());
+
+    assert(h_aOutput.size());
+    assert(h_aCell.size());
+
     cudaError_t eErrorCode = cudaSuccess;
     for (uint32 iDeviceIndex = 0; iDeviceIndex < m_oNodeConfig.size(); iDeviceIndex++)
     {
@@ -476,7 +510,50 @@ bool CWorker::Exec(bool bSingleCell, tOperation eOperation, const uint32 * const
 
 bool CWorker::Read(uint32 *pBitfield)
 {
-    return false;
+    // broadcast rank of target mpi node (the last activated one)
+    uint32 iNodeRank = m_iNodeIndex; // is valid only on host node
+    MPI_Bcast(&iNodeRank, 1, MPI_INT, GetHostRank(), GetCommunicator());
+
+    // there's no cell was activated during the last instruction
+    if (iNodeRank == kCellNotFound)
+        return false;
+
+    // interrupt all node except of host and target one
+    // (note that host can be target as well)
+    if (!IsHost() && iNodeRank != GetRank())
+        return false;
+
+    if (iNodeRank == GetRank())
+    {
+        assert(m_iDeviceIndex != kCellNotFound);
+        assert(m_iCellIndex != kCellNotFound);
+
+        // activate selected device
+        cudaError_t eErrorCode = cudaSetDevice(m_iDeviceIndex);
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        // get data directly from this device
+        eErrorCode = cudaMemcpy(
+            pBitfield,
+            d_aMemory[m_iDeviceIndex] + m_iCellIndex * m_uiCellSize,
+            m_uiCellSize * sizeof(uint32),
+            cudaMemcpyDeviceToHost
+        );
+
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        // send data if needed
+        if (!IsHost())
+            MPI_Send(pBitfield, m_uiCellSize * sizeof(uint32), MPI_BYTE, GetHostRank(), 0, GetCommunicator());
+    }
+
+    // receive data if needed
+    if (IsHost() && iNodeRank != GetRank())
+        MPI_Recv(pBitfield, m_uiCellSize * sizeof(uint32), MPI_BYTE, iNodeRank, 0, GetCommunicator(), MPI_STATUS_IGNORE);
+    
+    return true;
 }
 
 bool CWorker::ExecSequential(tOperation eOperation, const uint32 * const pInstruction)
@@ -488,7 +565,7 @@ bool CWorker::ExecSequential(tOperation eOperation, const uint32 * const pInstru
     //bool bFound = false;
 
     // find the first mpi node with which contains matched cell
-    for (uint32 iNodeRank = 0; iNodeRank < GetGroupSize(); iNodeRank++)
+    for (int32 iNodeRank = 0; iNodeRank < GetGroupSize(); iNodeRank++)
     {
         bool bNeedsExec = false;
         if (IsHost())

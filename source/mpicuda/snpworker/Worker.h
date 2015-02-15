@@ -82,6 +82,9 @@ private:
     tNodeConfig m_oNodeConfig;  // configuration for each device in the current node
     bool        m_bShouldExit;
 
+    bool        m_bRunning;     // was system started up?
+    uint16      m_uiCellSize;
+
     // pointers to the memory allocated on devices
     std::vector<uint32 *>   d_aMemory;
     std::vector<uint32 *>   d_aInstruction;

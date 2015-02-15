@@ -20,12 +20,12 @@ void CProtocolHandler::Write(tPacket *pPacket)
     if (aPacket.size() > SOCKET_OUT_BUFFER_MAX_SIZE)
         LOG_MESSAGE(1, "Out byte buffer overflow: Packet size(%d) exceeds max buffer size: Erasing message", aPacket.size());
 
-    LOG_MESSAGE(3, "Packed message for socket: %s", pPacket->ToString().c_str());
+    LOG_MESSAGE(5, "Packed message for socket: %s", pPacket->ToString().c_str());
     m_oSocket.m_abtOutBuffer.insert(m_oSocket.m_abtOutBuffer.end(), aPacket.begin(), aPacket.end());
 
     // Send outgoing data
     int iSendResult = m_oSocket.Send();
-    LOG_MESSAGE(3, "Has sent [%d] bytes to socket", iSendResult);
+    LOG_MESSAGE(5, "Has sent [%d] bytes to socket", iSendResult);
 }
 
 tPacket CProtocolHandler::Read()
@@ -34,7 +34,7 @@ tPacket CProtocolHandler::Read()
     int iReadResult = m_oSocket.Read();
     if(iReadResult > 0)
     {
-        LOG_MESSAGE(3, "Has read [%d] bytes from socket", iReadResult);
+        LOG_MESSAGE(5, "Has read [%d] bytes from socket", iReadResult);
     }
     else if(iReadResult <= 0) // Close socket on error | gentle shutdown
     {

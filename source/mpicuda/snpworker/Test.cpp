@@ -33,7 +33,7 @@ extern "C" void * ThreadServerF(void *pArg)
 
     const uint16 uiCellSize     = Device::getCellSize();   // int32-fields amount
     const uint32 uiCellsPerPU   = 128;
-    const uint32 uiNumberOfPU   = 10000;
+    const uint32 uiNumberOfPU   = 1000;
     // todo: get these params via command line along with --test
 
     LOG_MESSAGE(1, "[test-server] Starting system [%dx%dx%d]...", uiCellSize, uiCellsPerPU, uiNumberOfPU);

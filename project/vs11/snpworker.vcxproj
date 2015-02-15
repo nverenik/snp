@@ -145,7 +145,7 @@
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x86\pthreadVC2.dll" "$(OutDir)"
+      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x86\pthreadVC2.dll" "$(OutDir)" /y
 echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
@@ -165,7 +165,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x64\pthreadVC2.dll" "$(OutDir)"
+      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x64\pthreadVC2.dll" "$(OutDir)" /y
 echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
@@ -190,7 +190,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\external\pthreads-win32\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x86\pthreadVC2.dll" "$(OutDir)"
+      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x86\pthreadVC2.dll" "$(OutDir)" /y
 echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
@@ -215,7 +215,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x64\pthreadVC2.dll" "$(OutDir)"
+      <Command>xcopy "$(ProjectDir)..\..\external\pthreads-win32\dll\x64\pthreadVC2.dll" "$(OutDir)" /y
 echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
