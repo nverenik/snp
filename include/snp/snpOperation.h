@@ -5,12 +5,12 @@
 
 NS_SNP_BEGIN
 
-enum snpOperation
+enum tOperation
 {
-	snpAssign	= 0x00,
-	snpNot		= 0x01,
-	snpAnd		= 0x02,
-	snpOr		= 0x03
+    tOperation_Assign   = 0x00,
+    tOperation_Not      = 0x01,
+    tOperation_And      = 0x02,
+    tOperation_Or       = 0x03
 };
 
 NS_SNP_END

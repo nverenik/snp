@@ -182,72 +182,7 @@ static int32 Connect(const std::string &sHost, int32 iPort)
     return iNewSocketFD;
 }
 
-//static bool Exec(int32 iRank, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction)
-//{
-//    // execute kernel function for each device
-//    s_iDeviceIndex = kCellNotFound;
-//    for (uint32 iDeviceIndex = 0; iDeviceIndex < s_oNodeConfiguration.size(); iDeviceIndex++)
-//    {
-//        cudaError_t eErrorCode = cudaSetDevice(iDeviceIndex);
-//        if (eErrorCode != cudaSuccess)
-//            MPI_LOG("CUDA error: %s", cudaGetErrorString(eErrorCode));
-//
-//        const DeviceConfiguration &roDeviceConfiguration = s_oNodeConfiguration[iDeviceIndex];
-//        s_iCellIndex = kernel_exec(
-//            bSingleCell,
-//            eOperation,
-//            pInstruction,
-//            roDeviceConfiguration.m_uiCellDim,
-//            roDeviceConfiguration.m_uiThreadDim,
-//            roDeviceConfiguration.m_uiBlockDim,
-//            roDeviceConfiguration.m_uiGridDim,
-//            d_aMemory[iDeviceIndex],
-//            d_aInstruction[iDeviceIndex],
-//            d_aOutput[iDeviceIndex],
-//            h_aOutput[iDeviceIndex],
-//            h_aCell[iDeviceIndex]
-//        );
-//
-//        if (s_iCellIndex != kCellNotFound)
-//        {
-//            s_iDeviceIndex = iDeviceIndex;
-//            break;
-//        }
-//    }
-//
-//    // share with host just the fact that cell is found
-//    // bool bFound = (s_iDeviceIndex != kCellNotFound && s_iCellIndex != kCellNotFound);
-//    uint8 uiFound = (s_iDeviceIndex != kCellNotFound && s_iCellIndex != kCellNotFound) ? 1 : 0;
-//
-//    // prepare buffer to receive
-//    int32 iGroupSize = 0;
-//    MPI_Comm_size(MPI_COMM_WORLD, &iGroupSize);
-//
-//    // std::vector<bool> aFound;
-//    std::vector<uint8> aFound;
-//    if (iRank == s_iMpiHostRank)
-//        aFound.resize(iGroupSize);
-//
-//    // share result
-//    //MPI_Gather((void *)&bFound, 1, MPI_BYTE, (void *)(&aFound.front()), 1, MPI_BYTE, s_iMpiHostRank, MPI_COMM_WORLD);
-//    MPI_Gather(&uiFound, 1, MPI_BYTE, &aFound.front(), 1, MPI_BYTE, s_iMpiHostRank, MPI_COMM_WORLD);
-//
-//    // find the first matched node
-//    if (iRank == s_iMpiHostRank)
-//    {
-//        s_iNodeIndex = kCellNotFound;
-//        for (uint32 iNodeIndex = 0; iNodeIndex < aFound.size(); iNodeIndex++)
-//        {
-//            if (aFound[iNodeIndex])
-//            {
-//                s_iNodeIndex = iNodeIndex;
-//                break;
-//            }
-//        }
-//        return (s_iNodeIndex != kCellNotFound);
-//    }
-//    return uiFound;
-//}
+
 //
 //static bool Read(int32 iRank, uint32 *pBitfield)
 //{

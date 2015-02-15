@@ -5,7 +5,7 @@
 #include <cuda_runtime.h>
 
 #include <vector>
-#include <snp/snpMacros.h>
+#include <snp/snp.h>
 
 class CProtocolHandler;
 
@@ -59,8 +59,12 @@ private:
 
     bool Startup(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU);
     bool Shutdown();
-    bool Exec(/*int32 iRank, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction*/);
-    bool Read(/*int32 iRank, uint32 *pBitfield*/);
+    bool Exec(bool bSingleCell, tOperation eOperation, const uint32 * const pInstruction);
+    bool Read(uint32 *pBitfield);
+
+    bool ExecSequential(tOperation eOperation, const uint32 * const pInstruction);
+    bool ExecParallel(tOperation eOperation, const uint32 * const pInstruction);
+    bool ExecImpl(bool bSingleCell, tOperation eOperation, const uint32 * const pInstruction);
 
     // MPI constants
     const MPI_Comm  m_oCommunicator;
@@ -90,7 +94,7 @@ private:
     // Result of ther last performed Exec() command is the index of device
     // and index of the cell inside its memory pointing to the first matched
     // cell during instruction
-    int32   m_iNodeIndex;
+    int32   m_iNodeIndex;   // is valid only on host mpi node
     int32   m_iDeviceIndex;
     int32   m_iCellIndex;
 };

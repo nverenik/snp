@@ -9,7 +9,7 @@ USING_NS_SNP;
 
 static bool Startup(CProtocolHandler *pHandler, uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU);
 static bool Shutdown(CProtocolHandler *pHandler);
-static bool Exec(CProtocolHandler *pHandler, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction);
+static bool Exec(CProtocolHandler *pHandler, bool bSingleCell, tOperation eOperation, const uint32 * const pInstruction, uint32 uiInstructionSize);
 static bool Read(CProtocolHandler *pHandler, uint32 *pBitfield);
 
 extern "C" void * ThreadServerF(void *pArg)
@@ -29,6 +29,7 @@ extern "C" void * ThreadServerF(void *pArg)
     //
     // Start test sequence
     typedef snpDevice<1024> Device; // specify bitwidth
+    const uint32 uiInstructionSize = sizeof(Device::snpInstruction);
 
     const uint16 uiCellSize     = Device::getCellSize();   // int32-fields amount
     const uint32 uiCellsPerPU   = 128;
@@ -48,11 +49,11 @@ extern "C" void * ThreadServerF(void *pArg)
     // write constant values to the cells
     snpBitfieldSet(oInstruction.field.dataMask.raw, ~0);
     for (int32 iIntIndex = 0; iIntIndex < uiCellSize; iIntIndex++)
-        oInstruction.field.dataData.raw[iIntIndex] = iIntIndex;
+        oInstruction.field.dataData.raw[iIntIndex] = iIntIndex + 1;
 
     // perform instruction
     LOG_MESSAGE(1, "[test-server] Initialize device memory...");
-    Exec(&oProtocolHandler, false, snpAssign, oInstruction.raw);
+    Exec(&oProtocolHandler, false, tOperation_Assign, oInstruction.raw, uiInstructionSize);
 
     // for now all cells must have the same value
     // let read them all using the first cell as flag
@@ -68,7 +69,7 @@ extern "C" void * ThreadServerF(void *pArg)
 
     uint64 iIterations = 0;
     Device::snpBitfield oBitfield;
-    while(Exec(&oProtocolHandler, true, snpAssign, oInstruction.raw) == true)
+    while(Exec(&oProtocolHandler, true, tOperation_Assign, oInstruction.raw, uiInstructionSize) == true)
     {
         bool bResult = Read(&oProtocolHandler, oBitfield.raw);
         if (!bResult)
@@ -112,12 +113,35 @@ static bool Shutdown(CProtocolHandler *pHandler)
     return oResponse.m_oData.asResponseShutdown.m_bResult;
 }
 
-static bool Exec(CProtocolHandler *pHandler, bool bSingleCell, snpOperation eOperation, const uint32 * const pInstruction)
+static bool Exec(CProtocolHandler *pHandler, bool bSingleCell, tOperation eOperation, const uint32 * const pInstruction, uint32 uiInstructionSize)
 {
-    return false;
+    tPacket oRequest;
+    oRequest.m_eType = tPacket::tType_RequestExec;
+    oRequest.m_oData.asRequestExec.m_bSingleCell = bSingleCell;
+    oRequest.m_oData.asRequestExec.m_eOperation = eOperation;
+    oRequest.m_oDynamicData.resize(uiInstructionSize);
+    memcpy(&oRequest.m_oDynamicData.front(), pInstruction, uiInstructionSize);
+    pHandler->Write(&oRequest);
+
+    tPacket oResponse = pHandler->Read();
+    assert(oResponse.m_eType == tPacket::tType_ResponseExec);
+    return oResponse.m_oData.asResponseExec.m_bResult;
 }
 
 static bool Read(CProtocolHandler *pHandler, uint32 *pBitfield)
 {
-    return false;
+    tPacket oRequest;
+    oRequest.m_eType = tPacket::tType_RequestRead;
+    pHandler->Write(&oRequest);
+
+    tPacket oResponse = pHandler->Read();
+    assert(oResponse.m_eType == tPacket::tType_ResponseRead);
+
+    if (oResponse.m_oData.asResponseRead.m_bResult)
+    {
+        // copy output data
+        assert(oResponse.m_oDynamicData.size() > 0);
+        memcpy(pBitfield, &oResponse.m_oDynamicData.front(), oResponse.m_oDynamicData.size());
+    }
+    return oResponse.m_oData.asResponseRead.m_bResult;
 }

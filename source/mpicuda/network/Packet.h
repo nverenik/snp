@@ -1,11 +1,13 @@
 #ifndef _PACKET_H_
 #define _PACKET_H_
 
-#include <snp/snpMacros.h>
+#include <snp/snp.h>
+USING_NS_SNP;
+
 #include "DataTypes.h"
 
-#define PACKET_STARTER    0xFFFF
-#define PACKET_MAX_SIZE 65530
+#define PACKET_STARTER      0xFFFF
+#define PACKET_MAX_SIZE     65530
 
 struct tPacket
 {
@@ -55,26 +57,31 @@ struct tPacket
 
             struct
             {
-                int m_iTmp;            // TODO: specify valid data format here
+                bool m_bSingleCell;
+                tOperation m_eOperation;
             } asRequestExec;
 
             struct
             {
+                bool m_bResult;
             } asResponseExec;
 
             struct
             {
-                int m_iTmp;            // TODO: specify valid data format here
             } asRequestRead;
 
             struct
             {
+                bool m_bResult;
             } asResponseRead;
         };
     };
 
+    typedef std::vector<BYTE> tDynamicData;
+
     tType m_eType;
     tData m_oData;
+    tDynamicData m_oDynamicData;
 
     bool Extract(std::vector<BYTE>& raBuffer);
     std::vector<BYTE> Pack() const;

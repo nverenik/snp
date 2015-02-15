@@ -49,15 +49,15 @@ __device__ bool snp_check_cell(const uint32 * const cell, const uint32 * const m
 //
 // TODO: replace with template method to avoid switch
 //
-__device__ __host__ void snp_perform_cell(uint32 *cell, const uint32 * const mask, const uint32 * const data, uint32 cellDim, snp::snpOperation operation)
+__device__ __host__ void snp_perform_cell(uint32 *cell, const uint32 * const mask, const uint32 * const data, uint32 cellDim, snp::tOperation operation)
 {
     // loop was moved into switch to reduce number of condition tests
     switch(operation)
     {
-        case snp::snpAssign:    snpUpdateBits(snpUpdateBitsASSIGN,  cell[index], mask[index], data[index], cellDim);    break;
-        case snp::snpNot:       snpUpdateBits(snpUpdateBitsNOT,     cell[index], mask[index], data[index], cellDim);    break;
-        case snp::snpAnd:       snpUpdateBits(snpUpdateBitsAND,     cell[index], mask[index], data[index], cellDim);    break;
-        case snp::snpOr:        snpUpdateBits(snpUpdateBitsOR,      cell[index], mask[index], data[index], cellDim);    break;
+        case snp::tOperation_Assign:    snpUpdateBits(snpUpdateBitsASSIGN,  cell[index], mask[index], data[index], cellDim);    break;
+        case snp::tOperation_Not:       snpUpdateBits(snpUpdateBitsNOT,     cell[index], mask[index], data[index], cellDim);    break;
+        case snp::tOperation_And:       snpUpdateBits(snpUpdateBitsAND,     cell[index], mask[index], data[index], cellDim);    break;
+        case snp::tOperation_Or:        snpUpdateBits(snpUpdateBitsOR,      cell[index], mask[index], data[index], cellDim);    break;
         default: break;
     }
 }
@@ -92,7 +92,7 @@ __global__ void snp_find_cell(const uint32 * const mask, const uint32 * const da
 // Returns relative to PU cell index of first selected cell (writes is into output array
 // where each element is corresponds to single thread = PU).
 //
-__global__ void snp_perform_instruction(snp::snpOperation operation, const uint32 * const addressMask, const uint32 * const addressData,
+__global__ void snp_perform_instruction(snp::tOperation operation, const uint32 * const addressMask, const uint32 * const addressData,
     const uint32 * const dataMask, const uint32 * const dataData, uint32 cellDim, uint32 threadDim, uint32 *memory, int32 *output)
 {
     int32 result = kCellNotFound;
@@ -115,7 +115,7 @@ __global__ void snp_perform_instruction(snp::snpOperation operation, const uint3
 
 int32 kernel_exec(
     bool bSingleCell,
-    snp::snpOperation eOperation,
+    snp::tOperation eOperation,
     const uint32 * const pInstruction,
     uint32  uiCellDim,
     uint32  uiThreadDim,

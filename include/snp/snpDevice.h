@@ -55,7 +55,7 @@ public:
 	uint32 getNumberOfPU() const;
 
 	// Execute instruction on device. Returns True if at least one cell activated.
-	bool exec(bool singleCell, snpOperation operation, const snpInstruction &instruction, snpErrorCode *error = nullptr);
+	bool exec(bool singleCell, tOperation operation, const snpInstruction &instruction, snpErrorCode *error = nullptr);
 
 	// Read data from the 1st cell which activated while the last instruction.
 	// Returns False if no one cell is selected.
@@ -80,7 +80,7 @@ private:
 	bool init(uint16 cellSize, uint32 cellsPerPU, uint32 numberOfPU);
 	void deinit();
 
-	bool exec(bool singleCell, snpOperation operation, const uint32 * const instruction);
+	bool exec(bool singleCell, tOperation operation, const uint32 * const instruction);
 	bool read(uint32 *bitfield);
 
 	void dump();
@@ -147,7 +147,7 @@ snpErrorCode snpDevice<bitwidth>::end()
 }
 
 template<uint16 bitwidth>
-bool snpDevice<bitwidth>::exec(bool singleCell, snpOperation operation, const snpInstruction &instruction, snpErrorCode *error/* = nullptr*/)
+bool snpDevice<bitwidth>::exec(bool singleCell, tOperation operation, const snpInstruction &instruction, snpErrorCode *error/* = nullptr*/)
 {
 	if (m_device != nullptr)
 	{

@@ -169,6 +169,7 @@ bool CWorker::PrintSystemInfo() const
 void CWorker::RunLoop(CProtocolHandler *pHandler)
 {
     typedef tPacket::tData tData;
+    typedef tPacket::tDynamicData tDynamicData;
     typedef std::map<tPacket::tType, CWorker::tCommand> tCommandMap;
 
     tCommandMap oCommandMap;
@@ -182,6 +183,7 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
         // here the current command with parameters
         tCommand eCommand = tCommand_Idle;
         tData oData;
+        tDynamicData oDynamicData;
 
         // host should initialize them...
         if (IsHost())
@@ -189,8 +191,10 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
             //...using data received from the main app
             tPacket oPacket = pHandler->Read(); // blocking method
             assert(oCommandMap.count(oPacket.m_eType) > 0);
+
             eCommand = oCommandMap[oPacket.m_eType];
             oData = oPacket.m_oData;
+            oDynamicData.swap(oPacket.m_oDynamicData);
         }
 
         assert(eCommand != tCommand_Idle);
@@ -203,9 +207,11 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
         {
             case tCommand_Startup:
             {
-                bool bResult = Startup(oData.asRequestStartup.m_uiCellSize,
+                bool bResult = Startup(
+                    oData.asRequestStartup.m_uiCellSize,
                     oData.asRequestStartup.m_uiCellsPerPU,
-                    oData.asRequestStartup.m_uiNumberOfPU);
+                    oData.asRequestStartup.m_uiNumberOfPU
+                );
                 if (IsHost())
                 {
                     tPacket oPacket;
@@ -218,13 +224,25 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
             
             case tCommand_Exec:
             {
-                Exec();
+                assert(oDynamicData.size() > 0);
+                bool bResult = Exec(
+                    oData.asRequestExec.m_bSingleCell,
+                    oData.asRequestExec.m_eOperation,
+                    (uint32 *)&oDynamicData.front()
+                );
+                if (IsHost())
+                {
+                    tPacket oPacket;
+                    oPacket.m_eType = tPacket::tType_ResponseExec;
+                    oPacket.m_oData.asResponseExec.m_bResult = bResult;
+                    pHandler->Write(&oPacket);
+                }
                 break;
             };
 
             case tCommand_Read:
             {
-                Read();
+                Read(NULL);
                 break;
             };
 
@@ -445,14 +463,192 @@ bool CWorker::Shutdown()
     return true;
 }
 
-bool CWorker::Exec()
+bool CWorker::Exec(bool bSingleCell, tOperation eOperation, const uint32 * const pInstruction)
+{
+    m_iNodeIndex = kCellNotFound;
+    m_iDeviceIndex = kCellNotFound;
+    m_iCellIndex = kCellNotFound;
+
+    return (bSingleCell)
+        ? ExecSequential(eOperation, pInstruction)
+        : ExecParallel(eOperation, pInstruction);
+}
+
+bool CWorker::Read(uint32 *pBitfield)
 {
     return false;
 }
 
-bool CWorker::Read()
+bool CWorker::ExecSequential(tOperation eOperation, const uint32 * const pInstruction)
 {
-    return false;
+    assert(m_iNodeIndex == kCellNotFound);
+
+    // All mpi nodes must execute instruction one by one, as only one cell can be activated
+    // on the most prioritized node
+    //bool bFound = false;
+
+    // find the first mpi node with which contains matched cell
+    for (uint32 iNodeRank = 0; iNodeRank < GetGroupSize(); iNodeRank++)
+    {
+        bool bNeedsExec = false;
+        if (IsHost())
+        {
+            // host sends command to start kernel for each mpi node
+            if (iNodeRank == GetHostRank())
+            {
+                // no need send data to itself
+                bNeedsExec = true;
+            }
+            else
+            {
+                bool bTrue = true;
+                MPI_Send(&bTrue, 1, MPI_BYTE, iNodeRank, 0, GetCommunicator());
+            }
+        }
+
+        // result for the current mpi node
+        bool bFoundInNode = false;
+
+        // only once per loop logic
+        if (iNodeRank == GetRank())
+        {
+            if (!IsHost())
+                MPI_Recv(&bNeedsExec, 1, MPI_BYTE, GetHostRank(), 0, GetCommunicator(), MPI_STATUS_IGNORE);
+
+            bool bFound = false;
+            if (bNeedsExec)
+            {
+                // so execute instruction on device
+                bFound = ExecImpl(true, eOperation, pInstruction);
+                if (!IsHost())
+                {
+                    // and send result to the host
+                    MPI_Send(&bFound, 1, MPI_BYTE, GetHostRank(), 0, GetCommunicator());
+                }
+                else
+                {
+                    // again, in case of host no need to send data to itself
+                    bFoundInNode = bFound;
+                }
+            }
+
+            // no need to finish loop in child hodes
+            if (!IsHost()) return bFound;
+        }
+
+        if (IsHost())
+        {
+            if (iNodeRank != GetHostRank())
+            {
+                // receive result from the current mpi node
+                MPI_Recv(&bFoundInNode, 1, MPI_BYTE, iNodeRank, 0, GetCommunicator(), MPI_STATUS_IGNORE);
+            }
+
+            // current node contains matched cell, so no need to execute kernel further
+            if (bFoundInNode)
+            {
+                m_iNodeIndex = iNodeRank;
+                // but we need send exec command for all remaining mpi nodes
+                iNodeRank += 1;
+                for (; iNodeRank < GetGroupSize(); iNodeRank++)
+                {
+                    bool bFalse = false;
+                    MPI_Send(&bFalse, 1, MPI_BYTE, iNodeRank, 0, GetCommunicator());
+                }
+                break;
+            }
+        }
+    }
+
+    assert(IsHost());
+    return (m_iNodeIndex != kCellNotFound);
+}
+
+bool CWorker::ExecParallel(tOperation eOperation, const uint32 * const pInstruction)
+{
+    assert(m_iNodeIndex == kCellNotFound);
+
+    // note: somehow MPI_Gather doesn't support bool type
+    struct tBool {
+        bool m_bValue;
+    };
+
+    // All mpi nodes can execute instruction in parallel
+    tBool oFound;
+    oFound.m_bValue = ExecImpl(false, eOperation, pInstruction);
+
+    // host collects result data, prepare receiving buffer
+
+    std::vector<tBool> aFound;
+    if (IsHost())
+        aFound.resize(GetGroupSize());
+    
+    MPI_Datatype iBoolType;
+    MPI_Type_contiguous(sizeof(tBool), MPI_BYTE, &iBoolType);
+    MPI_Type_commit(&iBoolType);
+
+    MPI_Gather(&oFound, 1, iBoolType, &aFound.front(), 1, iBoolType, GetHostRank(), GetCommunicator());
+    MPI_Type_free(&iBoolType);
+
+    if (IsHost())
+    {
+        // find the first mpi node with which contains matched cell
+        m_iNodeIndex = kCellNotFound;
+        for (uint32 iNodeIndex = 0; iNodeIndex < aFound.size(); iNodeIndex++)
+        {
+            if (aFound[iNodeIndex].m_bValue)
+            {
+                m_iNodeIndex = iNodeIndex;
+                break;
+            }
+        }
+        return (m_iNodeIndex != kCellNotFound);
+    }
+    return oFound.m_bValue;
+}
+
+bool CWorker::ExecImpl(bool bSingleCell, tOperation eOperation, const uint32 * const pInstruction)
+{
+    assert(m_iDeviceIndex == kCellNotFound);
+    assert(m_iCellIndex == kCellNotFound);
+
+    // execute kernel function for each device
+    for (uint32 iDeviceIndex = 0; iDeviceIndex < m_oNodeConfig.size(); iDeviceIndex++)
+    {
+        cudaError_t eErrorCode = cudaSetDevice(iDeviceIndex);
+        if (eErrorCode != cudaSuccess)
+            LOG_MESSAGE(1, "CUDA error: %s", cudaGetErrorString(eErrorCode));
+
+        // todo: how to execute kernel for each device in parallel? is separated thread needed?
+        const tDeviceConfig &roDeviceConfig = m_oNodeConfig[iDeviceIndex];
+        uint32 iCellIndex = kernel_exec(
+            bSingleCell,
+            eOperation,
+            pInstruction,
+            roDeviceConfig.m_uiCellDim,
+            roDeviceConfig.m_uiThreadDim,
+            roDeviceConfig.m_uiBlockDim,
+            roDeviceConfig.m_uiGridDim,
+            d_aMemory[iDeviceIndex],
+            d_aInstruction[iDeviceIndex],
+            d_aOutput[iDeviceIndex],
+            h_aOutput[iDeviceIndex],
+            h_aCell[iDeviceIndex]
+        );
+
+        if (m_iCellIndex == kCellNotFound)
+        {
+            // save the first matched cell
+            m_iDeviceIndex = iDeviceIndex;
+            m_iCellIndex = iCellIndex;
+
+            // if instruction is performed only on the first matched cell
+            // we can not run kernel on the next devices
+            if (bSingleCell) break;
+        }
+    }
+
+    return (m_iCellIndex != kCellNotFound);
 }
 
 NS_SNP_END

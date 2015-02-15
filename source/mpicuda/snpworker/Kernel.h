@@ -8,7 +8,7 @@ extern "C" const int32 kCellNotFound;
 
 extern "C" int32 kernel_exec(
     bool bSingleCell,
-    snp::snpOperation eOperation,
+    snp::tOperation eOperation,
     const uint32 * const pInstruction,
     uint32  uiCellDim,
     uint32  uiThreadDim,

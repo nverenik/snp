@@ -1,73 +1,105 @@
 #include "Packet.h"
 
-bool tPacket::Extract(std::vector<BYTE>& raBuffer)
+bool tPacket::Extract(std::vector<BYTE> &raBuffer)
 {
-    static const unsigned int iMinPacketSize = sizeof(WORD) + sizeof(DWORD) + sizeof(DWORD) + 0 + sizeof(DWORD);
+    static const unsigned int iMinPacketSize
+        = sizeof(WORD)      // starter
+        + sizeof(DWORD)     // packet type
+        + sizeof(DWORD)     // size of data block
+        + 0                 // data block
+        + sizeof(DWORD)     // size of dynamic data block
+        + 0                 // dynamic data block
+        + sizeof(DWORD);    // crc32
 
     // 1: Extract starter
-    if( raBuffer.size() < iMinPacketSize )
+    if (raBuffer.size() < iMinPacketSize)
         return false;
 
-    BYTE* pBuffer = &( raBuffer.front() );
+    // pointer to the current packet field
+    BYTE *pBuffer = &raBuffer.front();
 
     WORD wTestStarter = ExtractWord(pBuffer);
-    if(wTestStarter != PACKET_STARTER)
+    if (wTestStarter != PACKET_STARTER)
     {
-        while( raBuffer.size() >= sizeof(WORD) )
+        // skip data until starter is found
+        while (raBuffer.size() >= sizeof(WORD))
         {
             wTestStarter = ExtractWord(pBuffer);
             if(wTestStarter == PACKET_STARTER)
-            {
                 break;
-            }
-            pBuffer = pop_front( raBuffer, sizeof(WORD) );
+            pBuffer = pop_front(raBuffer, sizeof(WORD));
         }
 
-        if(wTestStarter != PACKET_STARTER)
+        if (wTestStarter != PACKET_STARTER)
             return false;
     }
 
-    if( raBuffer.size() < iMinPacketSize )
+    if (raBuffer.size() < iMinPacketSize)
         return false;
 
+    // shift buffer pointer by the starter size
+    pBuffer += sizeof(WORD);
+
     // 2: Extract packet type
-    DWORD dwPacketType = ExtractDword( &*(raBuffer.begin() + sizeof(WORD)) );
+    DWORD dwPacketType = ExtractDword(pBuffer);
     if(dwPacketType >= tType_NUMTYPES)
     {
         LOG_MESSAGE(1, "Got a package with wrong type (%d)!", dwPacketType);
-        pop_front(raBuffer, sizeof(WORD));
+        pop_front(raBuffer, sizeof(DWORD));
         return false;
     }
+    pBuffer += sizeof(DWORD);
 
     // 3: Extract data size
-    DWORD dwDataSize = ExtractDword( &*(raBuffer.begin() + sizeof(WORD) + sizeof(DWORD)) );
+    DWORD dwDataSize = ExtractDword(pBuffer);
     if (dwDataSize > PACKET_MAX_SIZE)
     {
         LOG_MESSAGE(1, "Got a package with wrong data size (%d)!", dwDataSize);
-        pop_front(raBuffer, sizeof(WORD));
+        pop_front(raBuffer, sizeof(DWORD));
         return false;
     }
+    pBuffer += sizeof(DWORD);
 
     // 4: Extract data block
     if (raBuffer.size() < iMinPacketSize + dwDataSize)
         return false;
 
-    // 5: Extract & check Crc32
+    m_eType = (tType)dwPacketType;
+    memcpy(m_oData._raw, pBuffer, dwDataSize);
+    pBuffer += dwDataSize;
+    
+    // 5. Extract dynamic data size
+    DWORD dwDynamicDataSize = ExtractDword(pBuffer);
+    if (dwDataSize > PACKET_MAX_SIZE)
+    {
+        LOG_MESSAGE(1, "Got a package with wrong data size (%d)!", dwDataSize);
+        pop_front(raBuffer, sizeof(DWORD));
+        return false;
+    }
+    pBuffer += sizeof(DWORD);
+
+    // 6. Extract dynamic data block
+    if (raBuffer.size() < iMinPacketSize + dwDataSize + dwDynamicDataSize)
+        return false;
+
+    m_oDynamicData.resize(dwDynamicDataSize);
+    if (dwDynamicDataSize > 0)
+    {
+        memcpy(&m_oDynamicData.front(), pBuffer, dwDynamicDataSize);
+        pBuffer += dwDynamicDataSize;
+    }   
+
+    // 7. Extract & check Crc32
     /*DWORD dwCrc32 = ExtractDword(sizeof(WORD) + sizeof(DWORD) + sizeof(DWORD) + dwDataSize);
     DWORD dwCrc32Check = CRC::ArrayCrc32(pBuffer + sizeof(WORD) + sizeof(DWORD), dwDataSize - sizeof(DWORD));
     if(dwCrc32 != dwCrc32Check)
     {
         LOG_MESSAGE(1, "Got a package with wrong CRC!", dwDataSize);
-
         pop_front( raBuffer, sizeof(WORD) );
-
         return false;
     }*/
 
-    m_eType = (tType)dwPacketType;
-    memcpy(m_oData._raw, &*(raBuffer.begin() + sizeof(WORD) + sizeof(DWORD) + sizeof(DWORD)), dwDataSize);
-
-    pop_front(raBuffer, iMinPacketSize + dwDataSize);
+    pop_front(raBuffer, iMinPacketSize + dwDataSize + dwDynamicDataSize);
     return true;
 }
 
@@ -96,7 +128,9 @@ std::vector<BYTE> tPacket::Pack() const
     AppendWord(aPacket, PACKET_STARTER);
     AppendDword(aPacket, (DWORD)m_eType);
     AppendDword(aPacket, dwDataSize);
-    aPacket.insert( aPacket.end(), m_oData._raw, m_oData._raw + dwDataSize );
+    aPacket.insert(aPacket.end(), m_oData._raw, m_oData._raw + dwDataSize);
+    AppendDword(aPacket, m_oDynamicData.size());
+    aPacket.insert(aPacket.end(), m_oDynamicData.begin(), m_oDynamicData.end());
     AppendDword(aPacket, dwCrc32);
 
     return aPacket;
