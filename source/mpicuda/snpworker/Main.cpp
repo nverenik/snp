@@ -9,6 +9,10 @@
 #include <pthread.h>
 #include <sched.h>
 #include <semaphore.h>
+#else
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <fcntl.h>
 #endif // WIN32
 
 #include "../network/DataTypes.h"
@@ -58,9 +62,11 @@ int main(int argc, char* argv[])
     if (oWorker.IsHost() && oConfig.m_bLogSystemInfo)
     {
         oWorker.PrintSystemInfo();
-        // todo: abort slave nodes as well
-        return 0;
-    }
+        bExit = true;
+    }       
+
+    MPI_Bcast(&bExit, 1, MPI_BYTE, oWorker.GetHostRank(), oWorker.GetCommunicator());
+    if (bExit) return 0;
 
     if (oWorker.IsHost() && oConfig.m_bTestEnabled)
     {

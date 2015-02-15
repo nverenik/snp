@@ -5,6 +5,7 @@
 #include "../network/RenameMe.h"
 
 #include <map>
+#include <math.h>
 
 #include <cuda_runtime.h>
 #include "Kernel.h"
@@ -199,12 +200,11 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
             oDynamicData.swap(oPacket.m_oDynamicData);
         }
 
-        assert(eCommand != tCommand_Idle);
-        LOG_MESSAGE(5, "Processing command %d", eCommand);
-
         // broadcast command to all mpi nodes
         MPI_Bcast(&eCommand, 1, MPI_INT, GetHostRank(), GetCommunicator());
+        assert(eCommand != tCommand_Idle);
 
+        LOG_MESSAGE(5, "Processing command %d", eCommand);
         switch(eCommand)
         {
             case tCommand_Startup:

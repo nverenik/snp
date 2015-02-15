@@ -53,7 +53,7 @@ void CSocketAcceptor::AcceptConnections()
 
     while(true)
     {
-        int iClientAddrLen = sizeof(oClientAddr);
+        socklen_t iClientAddrLen = sizeof(oClientAddr);
         if( (iClientSocketFD = accept(iListeningSocketFD, (struct sockaddr*) &oClientAddr, &iClientAddrLen)) == -1 )
         {
             LOG_MESSAGE( 1, "accept error for socket[FD=%d]: %s", iListeningSocketFD, strerror(errno) );

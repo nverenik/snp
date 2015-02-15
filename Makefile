@@ -53,7 +53,7 @@ endif
 # Extra user flags
 EXTRA_NVCCFLAGS ?=
 EXTRA_LDFLAGS   ?=
-EXTRA_CCFLAGS   ?=
+EXTRA_CCFLAGS   ?= -std=c++0x
 
 
 # CUDA code generation flags
@@ -101,25 +101,37 @@ INCLUDES += -Iinclude/ \
             -I$(CUDA_INC_PATH)
 
 
+EXECUTABLE = snpworker
 SNPWORKER_ROOT = source/mpicuda/snpworker
+
+SOURCES = $(SNPWORKER_ROOT)/Kernel.cu \
+          $(SNPWORKER_ROOT)/Main.cpp \
+          $(SNPWORKER_ROOT)/Test.cpp \
+          $(SNPWORKER_ROOT)/Worker.cpp \
+          $(SNPWORKER_ROOT)/../network/Packet.cpp \
+          $(SNPWORKER_ROOT)/../network/ProtocolHandler.cpp \
+          $(SNPWORKER_ROOT)/../network/RenameMe.cpp \
+          $(SNPWORKER_ROOT)/../network/Socket.cpp \
+          $(SNPWORKER_ROOT)/../network/SocketAcceptor.cpp
+
+OBJECTS = $(patsubst %.cpp,%.o,$(patsubst %.cu,%.o,$(SOURCES)))
+
+.SUFFIXES: .cpp .cu .o
 
 # Target rules
 all: build
 
-build: clean snpworker
+build: clean $(SOURCES) $(EXECUTABLE)
 	make clean
 
-kernel.o: $(SNPWORKER_ROOT)/kernel.cu
+$(EXECUTABLE): $(OBJECTS)
+	$(MPICXX) -o $@ $+ $(LDFLAGS) $(EXTRA_LDFLAGS)
+
+.cpp.o:
+	$(MPICXX) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -c -o $@ $<
+
+.cu.o:
 	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
-
-Worker.o: $(SNPWORKER_ROOT)/Worker.cpp
-	$(MPICXX) $(CCFLAGS) $(INCLUDES) -o $@ -c $<
-
-main.o: $(SNPWORKER_ROOT)/main.cpp
-	$(MPICXX) $(CCFLAGS) $(INCLUDES) -o $@ -c $<
-
-snpworker: kernel.o Worker.o main.o
-	$(MPICXX) $(CCFLAGS) -o $@ $+ $(LDFLAGS) $(EXTRA_LDFLAGS)
 
 run: build
 	./snpworker

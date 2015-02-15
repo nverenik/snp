@@ -1,8 +1,8 @@
 #ifndef _PACKET_H_
 #define _PACKET_H_
 
-#include <snp/snp.h>
-USING_NS_SNP;
+#include <snp/snpMacros.h>
+#include <snp/snpOperation.h>
 
 #include "DataTypes.h"
 
@@ -58,7 +58,7 @@ struct tPacket
             struct
             {
                 bool m_bSingleCell;
-                tOperation m_eOperation;
+                snp::tOperation m_eOperation;
             } asRequestExec;
 
             struct

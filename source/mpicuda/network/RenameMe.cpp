@@ -1,5 +1,4 @@
 #include "RenameMe.h"
-#include "DataTypes.h"
 
 int SetSocketOptions(int iSocketFD, int iLevel, int iOptName, const void *pOptVal, int optlen)
 {

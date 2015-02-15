@@ -5,7 +5,8 @@
 #include <cuda_runtime.h>
 
 #include <vector>
-#include <snp/snp.h>
+#include <snp/snpMacros.h>
+#include <snp/snpOperation.h>
 
 class CProtocolHandler;
 

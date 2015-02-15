@@ -6,27 +6,31 @@
 #include <linux/types.h>
 #include <linux/elf.h>
 #include <sys/time.h>
+#include <errno.h>
+#include <string.h>
 #endif // !WIN32
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <iostream>
-//#include <errno.h>
 #include <assert.h>
 #include <string>
 #include <vector>
 #include <list>
 
 #ifdef WIN32
-#define FD_SETSIZE  1024
+//#define FD_SETSIZE  1024
 #include <winsock2.h>
+#include <WS2tcpip.h>
 #include <windows.h>
 #else // WIN32
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #endif // WIN32
+
+#include <snp/snpMacros.h>
 
 #define finline inline
 

@@ -19,32 +19,6 @@ public:
     
 private:
     tSocket m_oSocket;
-
-
-
-
-//    CProtocolHandler();
-//    virtual ~CProtocolHandler();
-//    void Tick();
-//    void InitSocket(int iSocketFD);
-//    void AddOutgoingPacket(tPacket* pPacket);
-//
-//
-//private:
-//    
-//    std::list<tPacket*> m_aInPacketBuffer;
-//    std::list<tPacket*> m_aOutPacketBuffer;
-//
-//    fd_set m_oReadSet;
-//    fd_set m_oWriteSet;
-//    fd_set m_oErrorSet;
-//
-//    void Select();
-//    void ReadWrite();
-//    void Extract();
-//    void Pack();
-//
-//    tPacket* GrabPacket();
 };
 
 #endif // _PROTOCOL_HANDLER_H_
