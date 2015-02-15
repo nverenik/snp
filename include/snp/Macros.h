@@ -5,17 +5,17 @@
 #include <assert.h>
 
 #ifdef __cplusplus
-	#define NS_SNP_BEGIN	namespace snp {
-	#define NS_SNP_END		}
-	#define USING_NS_SNP	using namespace snp
+    #define NS_SNP_BEGIN    namespace snp {
+    #define NS_SNP_END      }
+    #define USING_NS_SNP    using namespace snp
 #else
-	#define NS_SNP_BEGIN
-	#define NS_SNP_END
-	#define USING_NS_SNP
+    #define NS_SNP_BEGIN
+    #define NS_SNP_END
+    #define USING_NS_SNP
 #endif
 
-#define snpNotUsed(__x__)	((void)(__x__))
-#define	snpAssert(__A__)	assert(__A__)
+#define snpNotUsed(__x__)   ((void)(__x__))
+#define snpAssert(__A__)    assert(__A__)
 
 typedef unsigned char uint8;
 typedef unsigned short uint16;
@@ -47,15 +47,15 @@ typedef double float64;
 #define snpUpdateBitsOR(__data__, __mask__, __bitfield__) { (__data__) = ((__data__) | ((__mask__) & (__bitfield__))); }
 
 #define snpUpdateBits(__operation__, __data__, __mask__, __bitfield__, __cellSize__) \
-	for (uint32 index = 0; index < (__cellSize__); index++) { \
-		__operation__((__data__), (__mask__), (__bitfield__)) \
-	}
+    for (uint32 index = 0; index < (__cellSize__); index++) { \
+        __operation__((__data__), (__mask__), (__bitfield__)) \
+    }
 
 #define snpBitfieldSet(__bitfield__, __value__) { \
-	uint16 size = sizeof(__bitfield__) / sizeof((__bitfield__)[0]); \
-	for (uint16 index = 0; index < size; index++) { \
-		(__bitfield__)[index] = (__value__); \
-	} \
+    uint16 size = sizeof(__bitfield__) / sizeof((__bitfield__)[0]); \
+    for (uint16 index = 0; index < size; index++) { \
+        (__bitfield__)[index] = (__value__); \
+    } \
 }
 
 #endif //__SNP_MACROS_H__

@@ -17,7 +17,7 @@ class CWorkerProtocolHandler : public CProtocolHandler
 {
 public:
     CWorkerProtocolHandler()
-        : m_pPacket(NULL)
+        : m_pPacket(nullptr)
     {
         m_oCommandMap[tPacket::tType_Startup]   = CWorker::tCommand_Startup;
         m_oCommandMap[tPacket::tType_Exec]      = CWorker::tCommand_Exec;
@@ -40,7 +40,7 @@ public:
 
     inline tData * ReadData() const
     {
-        return (m_pPacket) ? &m_pPacket->m_oData : NULL;
+        return (m_pPacket) ? &m_pPacket->m_oData : nullptr;
     }
 
     inline void NextCommand()
@@ -48,7 +48,7 @@ public:
         if (m_pPacket)
         {
             delete m_pPacket;
-            m_pPacket = NULL;
+            m_pPacket = nullptr;
         }
     }
 

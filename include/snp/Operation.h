@@ -1,7 +1,7 @@
 #ifndef __SNP_OPERATION_H__
 #define __SNP_OPERATION_H__
 
-#include <snp/snpMacros.h>
+#include <snp/Macros.h>
 
 NS_SNP_BEGIN
 

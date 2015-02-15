@@ -5,8 +5,8 @@
 #include <cuda_runtime.h>
 
 #include <vector>
-#include <snp/snpMacros.h>
-#include <snp/snpOperation.h>
+#include <snp/Macros.h>
+#include <snp/Operation.h>
 
 class CProtocolHandler;
 
@@ -58,7 +58,7 @@ private:
 
     void Tick();
 
-    bool Startup(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU);
+    bool Startup(uint16 &uiCellSize, uint32 &uiCellsPerPU, uint32 &uiNumberOfPU);
     bool Shutdown();
     bool Exec(bool bSingleCell, tOperation eOperation, const uint32 * const pInstruction);
     bool Read(uint32 *pBitfield);

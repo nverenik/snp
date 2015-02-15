@@ -108,6 +108,7 @@ SOURCES = $(SNPWORKER_ROOT)/Kernel.cu \
           $(SNPWORKER_ROOT)/Main.cpp \
           $(SNPWORKER_ROOT)/Test.cpp \
           $(SNPWORKER_ROOT)/Worker.cpp \
+          $(SNPWORKER_ROOT)/../network/DeviceGlue.cpp \
           $(SNPWORKER_ROOT)/../network/Packet.cpp \
           $(SNPWORKER_ROOT)/../network/ProtocolHandler.cpp \
           $(SNPWORKER_ROOT)/../network/RenameMe.cpp \

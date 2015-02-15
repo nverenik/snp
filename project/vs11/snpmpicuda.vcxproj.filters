@@ -10,27 +10,75 @@
     <Filter Include="include\snp">
       <UniqueIdentifier>{9556cc2d-cf08-43ef-849f-f2e132d67ec3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="source\mpicuda">
+      <UniqueIdentifier>{d58ccce8-fdb2-4e12-8f5d-2089f2c451b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\mpicuda\network">
+      <UniqueIdentifier>{d5587515-f960-4c4b-ab27-1c9efa0b4957}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\snp\snp.h">
       <Filter>include\snp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\snp\snpDevice.h">
+    <ClInclude Include="..\..\source\mpicuda\network\DataTypes.h">
+      <Filter>source\mpicuda\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\Packet.h">
+      <Filter>source\mpicuda\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\ProtocolHandler.h">
+      <Filter>source\mpicuda\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\RenameMe.h">
+      <Filter>source\mpicuda\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\Socket.h">
+      <Filter>source\mpicuda\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\SocketAcceptor.h">
+      <Filter>source\mpicuda\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\mpicuda\network\DeviceGlue.h">
+      <Filter>source\mpicuda\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\snp\Device.h">
       <Filter>include\snp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\snp\snpErrorCode.h">
+    <ClInclude Include="..\..\include\snp\Macros.h">
       <Filter>include\snp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\snp\snpMacros.h">
+    <ClInclude Include="..\..\include\snp\ErrorCode.h">
       <Filter>include\snp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\snp\snpOperation.h">
+    <ClInclude Include="..\..\include\snp\Operation.h">
       <Filter>include\snp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\source\snpDevice.cpp">
+    <ClCompile Include="..\..\source\mpicuda\network\Packet.cpp">
+      <Filter>source\mpicuda\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\network\ProtocolHandler.cpp">
+      <Filter>source\mpicuda\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\network\RenameMe.cpp">
+      <Filter>source\mpicuda\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\network\Socket.cpp">
+      <Filter>source\mpicuda\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\network\SocketAcceptor.cpp">
+      <Filter>source\mpicuda\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\network\DeviceGlue.cpp">
+      <Filter>source\mpicuda\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Device.cpp">
       <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\mpicuda\DeviceMpiCuda.cpp">
+      <Filter>source\mpicuda</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

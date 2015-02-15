@@ -1,8 +1,8 @@
 #ifndef _PACKET_H_
 #define _PACKET_H_
 
-#include <snp/snpMacros.h>
-#include <snp/snpOperation.h>
+#include <snp/Macros.h>
+#include <snp/Operation.h>
 
 #include "DataTypes.h"
 
@@ -36,14 +36,17 @@ struct tPacket
 
             struct
             {
-                uint32  m_uiCellSize;
+                uint16  m_uiCellSize;
                 uint32  m_uiCellsPerPU;
                 uint32  m_uiNumberOfPU;
             } asRequestStartup;
 
             struct
             {
-                bool m_bResult;
+                uint16  m_uiCellSize;
+                uint32  m_uiCellsPerPU;
+                uint32  m_uiNumberOfPU;
+                bool    m_bResult;
             } asResponseStartup;
 
             struct

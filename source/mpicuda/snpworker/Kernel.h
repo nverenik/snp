@@ -1,8 +1,8 @@
 #ifndef __KERNEL_H__
 #define __KERNEL_H__
 
-#include <snp/snpMacros.h>
-#include <snp/snpOperation.h>
+#include <snp/Macros.h>
+#include <snp/Operation.h>
 
 extern "C" const int32 kCellNotFound;
 

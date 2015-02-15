@@ -209,21 +209,30 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
         {
             case tCommand_Startup:
             {
+                // these parameters can be changed in startup so we
+                // will send the new values to the main app
+                uint16 uiCellSize = oData.asRequestStartup.m_uiCellSize;
+                uint32 uiCellsPerPU = oData.asRequestStartup.m_uiCellsPerPU;
+                uint32 uiNumberOfPU = oData.asRequestStartup.m_uiNumberOfPU;
+
                 assert(!m_bRunning);
-                bool bResult = Startup(
-                    oData.asRequestStartup.m_uiCellSize,
-                    oData.asRequestStartup.m_uiCellsPerPU,
-                    oData.asRequestStartup.m_uiNumberOfPU
-                );
+                bool bResult = Startup(uiCellSize, uiCellsPerPU, uiNumberOfPU);
                 if (IsHost())
                 {
                     tPacket oPacket;
                     oPacket.m_eType = tPacket::tType_ResponseStartup;
                     oPacket.m_oData.asResponseStartup.m_bResult = bResult;
+                    oPacket.m_oData.asResponseStartup.m_uiCellSize = uiCellSize;
+                    oPacket.m_oData.asResponseStartup.m_uiCellsPerPU = uiCellsPerPU;
+                    oPacket.m_oData.asResponseStartup.m_uiNumberOfPU = uiNumberOfPU;
                     pHandler->Write(&oPacket);
                 }
-                m_bRunning = bResult;
-                m_uiCellSize = oData.asRequestStartup.m_uiCellSize;
+
+                if (bResult)
+                {
+                    m_uiCellSize = uiCellSize;
+                    m_bRunning = bResult;
+                }
                 break;
             };
             
@@ -292,7 +301,7 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
     }
 }
 
-bool CWorker::Startup(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU)
+bool CWorker::Startup(uint16 &uiCellSize, uint32 &uiCellsPerPU, uint32 &uiNumberOfPU)
 {
     assert(!d_aMemory.size());
     assert(!d_aInstruction.size());
@@ -300,6 +309,8 @@ bool CWorker::Startup(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfP
 
     assert(!h_aOutput.size());
     assert(!h_aCell.size());
+
+    // todo: we can change uiCellSize and uiCellsPerPU depending on hardware
 
     // Find the configuration for GPUs
     tSystemConfig oSystemConfig;
@@ -432,18 +443,18 @@ bool CWorker::Startup(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfP
 
     if (IsHost())
     {
-        uint32 uiTotalNumberOfPU = 0;
+        // calculate total number of PU
+        uiNumberOfPU = 0;
         for (uint32 iNodeIndex = 0; iNodeIndex < oSystemConfig.size(); iNodeIndex++)
         {
             const tNodeConfig &roNodeConfig = oSystemConfig[iNodeIndex];
             for (uint32 iDeviceIndex = 0; iDeviceIndex < roNodeConfig.size(); iDeviceIndex++)
             {
-                uiTotalNumberOfPU +=
+                uiNumberOfPU +=
                     roNodeConfig[iDeviceIndex].m_uiBlockDim *
                     roNodeConfig[iDeviceIndex].m_uiGridDim;
             }
         }
-        LOG_MESSAGE(3, "Total number of PU: %u", uiTotalNumberOfPU);
     }
 
     MPI_Barrier(GetCommunicator());

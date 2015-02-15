@@ -47,6 +47,7 @@
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\XorHandler.h" />
     <ClInclude Include="..\..\external\tclap-1.2.1\include\tclap\ZshCompletionOutput.h" />
     <ClInclude Include="..\..\source\mpicuda\network\DataTypes.h" />
+    <ClInclude Include="..\..\source\mpicuda\network\DeviceGlue.h" />
     <ClInclude Include="..\..\source\mpicuda\network\Packet.h" />
     <ClInclude Include="..\..\source\mpicuda\network\ProtocolHandler.h" />
     <ClInclude Include="..\..\source\mpicuda\network\RenameMe.h" />
@@ -60,6 +61,7 @@
     <CudaCompile Include="..\..\source\mpicuda\snpworker\Kernel.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\source\mpicuda\network\DeviceGlue.cpp" />
     <ClCompile Include="..\..\source\mpicuda\network\Packet.cpp" />
     <ClCompile Include="..\..\source\mpicuda\network\ProtocolHandler.cpp" />
     <ClCompile Include="..\..\source\mpicuda\network\RenameMe.cpp" />

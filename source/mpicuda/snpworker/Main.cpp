@@ -68,17 +68,19 @@ int main(int argc, char* argv[])
     MPI_Bcast(&bExit, 1, MPI_BYTE, oWorker.GetHostRank(), oWorker.GetCommunicator());
     if (bExit) return 0;
 
+    pthread_t hThreadServer;
     if (oWorker.IsHost() && oConfig.m_bTestEnabled)
     {
         // run separated thread which emulates main app
-        pthread_t hThreadServer;
-        if (pthread_create(&hThreadServer, NULL, ThreadServerF, NULL) != 0)
+        if (pthread_create(&hThreadServer, nullptr, ThreadServerF, nullptr) != 0)
         {
-            //LOG_MESSAGE( 1, "Error creating Server thread: %s", strerror(errno) );
-            // todo: abort slave nodes as well
-            return 0;
+            LOG_MESSAGE(1, "Error creating test server thread: %s", strerror(errno));
+            bExit = true;
         }
     }
+
+    MPI_Bcast(&bExit, 1, MPI_BYTE, oWorker.GetHostRank(), oWorker.GetCommunicator());
+    if (bExit) return 0;
 
     // connect to the main application
     if (oWorker.IsHost())
@@ -95,7 +97,14 @@ int main(int argc, char* argv[])
     }
     else
     {
-        oWorker.RunLoop(NULL);
+        oWorker.RunLoop(nullptr);
+    }
+
+    if (oWorker.IsHost() && oConfig.m_bTestEnabled)
+    {
+        // wait until child thread is finished
+        if ((pthread_join(hThreadServer, NULL)) != 0)
+            LOG_MESSAGE(1, "pthread_join error: %s", strerror(errno));
     }
 
     // MPI_Finalize() is called using atexit callback

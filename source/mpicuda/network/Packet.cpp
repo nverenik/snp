@@ -180,5 +180,5 @@ BYTE* tPacket::pop_front(std::vector<BYTE>& raBuffer, DWORD dwSize)
     }
 
     raBuffer.erase(raBuffer.begin(), raBuffer.begin() + dwSize);
-    return (raBuffer.size() > 0) ? &(raBuffer.front()) : NULL;
+    return (raBuffer.size() > 0) ? &(raBuffer.front()) : nullptr;
 }

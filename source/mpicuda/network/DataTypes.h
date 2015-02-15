@@ -30,7 +30,7 @@
 #include <netinet/in.h>
 #endif // WIN32
 
-#include <snp/snpMacros.h>
+#include <snp/Macros.h>
 
 #define finline inline
 
