@@ -1,5 +1,5 @@
-#ifndef __SNP_OPERATION_H__
-#define __SNP_OPERATION_H__
+#ifndef __OPERATION_H__
+#define __OPERATION_H__
 
 #include <snp/Macros.h>
 
@@ -15,4 +15,4 @@ enum tOperation
 
 NS_SNP_END
 
-#endif //__SNP_OPERATION_H__
+#endif //__OPERATION_H__

@@ -1,5 +1,5 @@
-#ifndef __SNP_DEVICE_H__
-#define __SNP_DEVICE_H__
+#ifndef __DEVICE_H__
+#define __DEVICE_H__
 
 #include <snp/Macros.h>
 #include <snp/ErrorCode.h>
@@ -42,8 +42,6 @@ public:
     tmDevice();
     ~tmDevice();
 
-    static CErrorCode SystemInfo();
-
     CErrorCode Configure(uint32 uiCellsPerPU, uint32 uiNumberOfPU);
     CErrorCode End();
 
@@ -68,7 +66,6 @@ class CDevice
 {
 private:
     static CDevice * Create(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU);
-    static bool SystemInfo();
 
     CDevice();
     ~CDevice();
@@ -91,13 +88,6 @@ private:
 
     static bool m_bExists;    
 };
-
-template<uint16 uiBitwidth>
-CErrorCode tmDevice<uiBitwidth>::SystemInfo()
-{
-    CDevice::SystemInfo();
-    return CErrorCode::SUCCEEDED;
-}
 
 template<uint16 uiBitwidth>
 tmDevice<uiBitwidth>::tmDevice()
@@ -148,7 +138,7 @@ bool tmDevice<uiBitwidth>::Exec(bool bSingleCell, tOperation eOperation, const t
         if (pError != nullptr)
             (*pError) = CErrorCode::SUCCEEDED;
 
-        return m_pDevice->Exec(bSingleCell, eOperation, roInstruction.raw);
+        return m_pDevice->Exec(bSingleCell, eOperation, roInstruction._raw);
     }
     
     if (pError != nullptr)
@@ -165,7 +155,7 @@ bool tmDevice<uiBitwidth>::Read(tBitfield &roBitfield, CErrorCode *pError/* = nu
         if (pError != nullptr)
             (*pError) = CErrorCode::SUCCEEDED;
 
-        return m_pDevice->Read(roBitfield.raw);
+        return m_pDevice->Read(roBitfield._raw);
     }
     
     if (pError != nullptr)
@@ -188,4 +178,4 @@ uint32 tmDevice<uiBitwidth>::GetNumberOfPU() const
 
 NS_SNP_END
 
-#endif //__SNP_DEVICE_H__
+#endif //__DEVICE_H__

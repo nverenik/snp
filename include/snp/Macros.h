@@ -1,5 +1,5 @@
-#ifndef __SNP_MACROS_H__
-#define __SNP_MACROS_H__
+#ifndef __MACROS_H__
+#define __MACROS_H__
 
 #include <stdio.h>
 #include <assert.h>
@@ -58,4 +58,4 @@ typedef double float64;
     } \
 }
 
-#endif //__SNP_MACROS_H__
+#endif //__MACROS_H__

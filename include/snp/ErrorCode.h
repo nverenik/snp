@@ -1,5 +1,5 @@
-#ifndef __SNP_ERROR_CODE_H__
-#define __SNP_ERROR_CODE_H__
+#ifndef __ERROR_CODE_H__
+#define __ERROR_CODE_H__
 
 #include <snp/Macros.h>
 
@@ -44,4 +44,4 @@ public:
 
 NS_SNP_END
 
-#endif //__SNP_ERROR_CODE_H__
+#endif //__ERROR_CODE_H__
