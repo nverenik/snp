@@ -15,9 +15,15 @@ void CSocketAcceptor::AcceptConnections()
     int iListeningSocketFD, iClientSocketFD;
     struct sockaddr_in oSrvAddr, oClientAddr;
 
-    if( (iListeningSocketFD = socket(AF_INET, SOCK_STREAM, 0)) == -1 )
+#ifdef WIN32
+    int iInvalidSocket = INVALID_SOCKET;
+#else
+    int iInvalidSocket = -1;
+#endif
+
+    if ((iListeningSocketFD = socket(AF_INET, SOCK_STREAM, 0)) == iInvalidSocket)
     {
-        LOG_MESSAGE( 1, "Socket creation error: %s", strerror(errno) );
+        LOG_MESSAGE(1, "Socket creation error: %s", strerror(errno));
         return;
     }
 

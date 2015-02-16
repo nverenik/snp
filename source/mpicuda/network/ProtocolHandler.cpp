@@ -8,7 +8,7 @@ CProtocolHandler::CProtocolHandler(int iSocketFD)
 
 CProtocolHandler::~CProtocolHandler()
 {
-    assert(m_oSocket.m_bClosed == true);
+    //assert(m_oSocket.m_bClosed == true);
     CloseSocket(m_oSocket.m_iSocketHandle);
 }
 

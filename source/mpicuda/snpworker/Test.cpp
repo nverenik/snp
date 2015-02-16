@@ -10,6 +10,10 @@ USING_NS_SNP;
 #include "../network/DeviceGlue.h"
 using namespace glue;
 
+#ifdef WIN32
+#include <pthread.h>
+#endif
+
 extern "C" void * ThreadServerF(void *pArg)
 {
     LOG_MESSAGE(1, "[test-server] Thread started...");
@@ -26,12 +30,12 @@ extern "C" void * ThreadServerF(void *pArg)
     
     //
     // Start test sequence
-    typedef tmDevice<1024> Device; // specify bitwidth
+    typedef tmDevice<32> Device; // specify bitwidth
     const uint32 uiInstructionSize = sizeof(Device::tInstruction);
 
     uint16 uiCellSize     = Device::GetCellSize();   // int32-fields amount
-    uint32 uiCellsPerPU   = 128;
-    uint32 uiNumberOfPU   = 1000;
+    uint32 uiCellsPerPU   = 1;
+    uint32 uiNumberOfPU   = 1;
     // todo: get these params via command line along with --test
 
     LOG_MESSAGE(1, "[test-server] Starting system [%dx%dx%d]...", uiCellSize, uiCellsPerPU, uiNumberOfPU);

@@ -181,6 +181,10 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
     oCommandMap[tPacket::tType_RequestRead]     = CWorker::tCommand_Read;
     oCommandMap[tPacket::tType_RequestShutdown] = CWorker::tCommand_Shutdown;
 
+    MPI_Datatype iDataType;
+    MPI_Type_contiguous(sizeof(tData), MPI_BYTE, &iDataType);
+    MPI_Type_commit(&iDataType);
+
     while(!m_bShouldExit)
     {
         // here the current command with parameters
@@ -203,6 +207,13 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
         // broadcast command to all mpi nodes
         MPI_Bcast(&eCommand, 1, MPI_INT, GetHostRank(), GetCommunicator());
         assert(eCommand != tCommand_Idle);
+
+        // broadcast command parameters
+        MPI_Bcast(&oData, 1, iDataType, GetHostRank(), GetCommunicator());
+
+        oDynamicData.push_back(0);  // to be sure that vector is not empty
+        MPI_Bcast(&oDynamicData.front(), oDynamicData.size(), MPI_BYTE, GetHostRank(), GetCommunicator());
+        oDynamicData.erase(oDynamicData.begin());
 
         LOG_MESSAGE(5, "Processing command %d", eCommand);
         switch(eCommand)
@@ -299,6 +310,8 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
             default: break;
         }
     }
+
+    MPI_Type_free(&iDataType);
 }
 
 bool CWorker::Startup(uint16 &uiCellSize, uint32 &uiCellsPerPU, uint32 &uiNumberOfPU)

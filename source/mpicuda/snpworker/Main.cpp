@@ -35,8 +35,6 @@ struct Config
     bool    m_bLogSystemInfo;
 };
 
-//#define MPI_LOG(__format__, ...) printf("[%d:%s] "__format__"\n", s_iMpiRank, s_pszProcessorName, ##__VA_ARGS__)
-
 int main(int argc, char* argv[])
 {
     system("hostname");
@@ -68,6 +66,7 @@ int main(int argc, char* argv[])
     MPI_Bcast(&bExit, 1, MPI_BYTE, oWorker.GetHostRank(), oWorker.GetCommunicator());
     if (bExit) return 0;
 
+    // if test mode is enabled host run the separated thread which emulates server-side
     pthread_t hThreadServer;
     if (oWorker.IsHost() && oConfig.m_bTestEnabled)
     {
@@ -82,16 +81,39 @@ int main(int argc, char* argv[])
     MPI_Bcast(&bExit, 1, MPI_BYTE, oWorker.GetHostRank(), oWorker.GetCommunicator());
     if (bExit) return 0;
 
-    // connect to the main application
+    // host connects to the main application
+    int32 iSocketFD = -1;
     if (oWorker.IsHost())
     {
-        int32 iSocketFD = Connect("127.0.0.1", 60666);
-	    if (iSocketFD == -1)
-        {
-            // todo: abort slave nodes as well
-            return 0;
-        }
+        const uint32 uiTimeout = 10 * 1000; // 10 sec
+        const uint32 uiTick = 1000; // 1 sec
 
+        uint32 uiTimer = 0;
+        while(true)
+        {
+            iSocketFD = Connect("127.0.0.1", 60666);
+            if (iSocketFD != -1)
+                break;
+
+            LOG_MESSAGE(1, "Connection to the server failed: %s", strerror(errno));
+
+            msleep(uiTick);
+            uiTimer += uiTick;
+
+            if (uiTimer >= uiTimeout)
+            {
+                LOG_MESSAGE(1, "Connection timeout.");
+                bExit = true;
+                break;
+            }
+        }
+    }
+
+    MPI_Bcast(&bExit, 1, MPI_BYTE, oWorker.GetHostRank(), oWorker.GetCommunicator());
+    if (bExit) return 0;
+
+    if (oWorker.IsHost())
+    {
         CProtocolHandler oHanler(iSocketFD);
         oWorker.RunLoop(&oHanler);
     }

@@ -6,6 +6,32 @@
 
 NS_SNP_BEGIN
 
+#ifdef WIN32
+
+static class CWSAInitializer
+{
+public:
+    CWSAInitializer()
+    {
+        WORD wVersionRequested = MAKEWORD(2, 2);
+        WSADATA wsaData;
+
+        int iError = WSAStartup(0x0202, &wsaData);
+        if (iError != 0) {
+            // Tell the user that we could not find a usable Winsock DLL.
+            LOG_MESSAGE(1, "WSAStartup failed with error: %d\n", iError);
+        }
+    }
+
+    ~CWSAInitializer()
+    {
+        WSACleanup();
+    }
+
+} s_oWSAInitializer;
+
+#endif
+
 static CProtocolHandler *s_pHandler = nullptr;
 
 bool CDevice::Init(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU)
@@ -58,7 +84,7 @@ void CDevice::Deinit()
 bool CDevice::Exec(bool bSingleCell, tOperation eOperation, const uint32 * const pInstruction)
 {
     // send 'exec' command to the worker
-    return glue::Exec(s_pHandler, bSingleCell, eOperation, pInstruction, 0);
+    return glue::Exec(s_pHandler, bSingleCell, eOperation, pInstruction, m_uiCellSize * 4);
 }
 
 bool CDevice::Read(uint32 *pBitfield)
