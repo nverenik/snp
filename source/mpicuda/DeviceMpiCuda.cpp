@@ -69,7 +69,7 @@ bool CDevice::Init(uint16 uiCellSize, uint32 uiCellsPerPU, uint32 uiNumberOfPU)
 void CDevice::Deinit()
 {
     // send 'shutdown' command to the worker (cluster process will be stopped)
-    LOG_MESSAGE(1, "[test-server] Shutting down...");
+    LOG_MESSAGE(1, "[snp-server] Shutting down...");
     glue::Shutdown(s_pHandler);
 
     // cleanup connection variables

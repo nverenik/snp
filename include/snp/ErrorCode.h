@@ -27,7 +27,7 @@ public:
         : m_value(value)
     {
         // don't forget to update assert
-        snpAssert(m_value >= SUCCEEDED && m_value <= GPU_INIT_ERROR);
+        snpAssert(m_value >= UNDEFINED && m_value <= GPU_INIT_ERROR);
     }
 
     operator enum_type() const
