@@ -30,12 +30,12 @@ extern "C" void * ThreadServerF(void *pArg)
     
     //
     // Start test sequence
-    typedef tmDevice<32> Device; // specify bitwidth
+    typedef tmDevice<1024> Device; // specify bitwidth
     const uint32 uiInstructionSize = sizeof(Device::tInstruction);
 
     uint16 uiCellSize     = Device::GetCellSize();   // int32-fields amount
-    uint32 uiCellsPerPU   = 1;
-    uint32 uiNumberOfPU   = 1;
+    uint32 uiCellsPerPU   = 8;
+    uint32 uiNumberOfPU   = 32 * 1024;
     // todo: get these params via command line along with --test
 
     LOG_MESSAGE(1, "[test-server] Starting system [%dx%dx%d]...", uiCellSize, uiCellsPerPU, uiNumberOfPU);

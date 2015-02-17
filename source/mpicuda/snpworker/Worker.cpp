@@ -211,9 +211,15 @@ void CWorker::RunLoop(CProtocolHandler *pHandler)
         // broadcast command parameters
         MPI_Bcast(&oData, 1, iDataType, GetHostRank(), GetCommunicator());
 
-        oDynamicData.push_back(0);  // to be sure that vector is not empty
-        MPI_Bcast(&oDynamicData.front(), oDynamicData.size(), MPI_BYTE, GetHostRank(), GetCommunicator());
-        oDynamicData.erase(oDynamicData.begin());
+        // also broadcast dynamic data id needed
+        uint32 iDynamicDataSize = oDynamicData.size();
+        MPI_Bcast(&iDynamicDataSize, 1, MPI_INT, GetHostRank(), GetCommunicator());
+        if (iDynamicDataSize > 0)
+        {
+            if (!IsHost())
+                oDynamicData.resize(iDynamicDataSize);
+            MPI_Bcast(&oDynamicData.front(), oDynamicData.size(), MPI_BYTE, GetHostRank(), GetCommunicator());
+        }
 
         LOG_MESSAGE(5, "Processing command %d", eCommand);
         switch(eCommand)
@@ -324,6 +330,7 @@ bool CWorker::Startup(uint16 &uiCellSize, uint32 &uiCellsPerPU, uint32 &uiNumber
     assert(!h_aCell.size());
 
     // todo: we can change uiCellSize and uiCellsPerPU depending on hardware
+    // (for optimization purpose)
 
     // Find the configuration for GPUs
     tSystemConfig oSystemConfig;
@@ -745,7 +752,7 @@ bool CWorker::ExecImpl(bool bSingleCell, tOperation eOperation, const uint32 * c
 
             // if instruction is performed only on the first matched cell
             // we can not run kernel on the next devices
-            if (bSingleCell) break;
+            if (bSingleCell && m_iCellIndex != kCellNotFound) break;
         }
     }
 
