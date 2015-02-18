@@ -21,24 +21,26 @@
 
 #include "Worker.h"
 
-struct Config;
+struct tConfig;
 
 static void OnExit();
-static bool ProcessCommandLine(int32 argc, char* argv[], Config &roConfig);
-static int32 Connect(const std::string &sHost, int iPort);
+static bool ProcessCommandLine(int32 argc, char* argv[], tConfig &roConfig);
+static int32 Connect(const std::string &sHost, int32 iPort);
 
 extern "C" void * ThreadServerF(void *pArg);
 
-struct Config
+struct tConfig
 {
-    bool    m_bTestEnabled;
-    bool    m_bLogSystemInfo;
+    std::string m_sHostDefault;
+    std::string m_sHost;
+    int32       m_iPortDefault;
+    int32       m_iPort;
+    bool        m_bTestEnabled;
+    bool        m_bLogSystemInfo;
 };
 
 int main(int argc, char* argv[])
 {
-    system("hostname");
-
     ::atexit(OnExit);
     MPI_Init(&argc, &argv);
 
@@ -48,7 +50,10 @@ int main(int argc, char* argv[])
     bool bExit = false;
 
     // host node parses command line
-    Config oConfig;
+    tConfig oConfig;
+    oConfig.m_sHostDefault = "127.0.0.1";
+    oConfig.m_iPortDefault = 60666;
+
     if (oWorker.IsHost() && !ProcessCommandLine(argc, argv, oConfig))
         bExit = true;
 
@@ -65,6 +70,8 @@ int main(int argc, char* argv[])
 
     MPI_Bcast(&bExit, 1, MPI_BYTE, oWorker.GetHostRank(), oWorker.GetCommunicator());
     if (bExit) return 0;
+
+    system("hostname");
 
     // if test mode is enabled host run the separated thread which emulates server-side
     pthread_t hThreadServer;
@@ -91,7 +98,7 @@ int main(int argc, char* argv[])
         uint32 uiTimer = 0;
         while(true)
         {
-            iSocketFD = Connect("127.0.0.1", 60666);
+            iSocketFD = Connect(oConfig.m_sHost.c_str(), oConfig.m_iPort);
             if (iSocketFD != -1)
                 break;
 
@@ -138,7 +145,7 @@ static void OnExit()
     MPI_Finalize();
 }
 
-static bool ProcessCommandLine(int argc, char* argv[], Config &roConfig)
+static bool ProcessCommandLine(int argc, char* argv[], tConfig &roConfig)
 {
     try
     {
@@ -146,14 +153,29 @@ static bool ProcessCommandLine(int argc, char* argv[], Config &roConfig)
             "(Semantic Network Processor, see http://github.com/nverenik/snp). It's responsible "
             "for connection with the main application and execution received commands on the "
             "computation cluster using MPI and NVidia CUDA frameworks.", ' ', "0.1.0");
+
         TCLAP::SwitchArg oTestSwitch("", "test", "Runs host worker in the test mode. It will generate a sequence of dummy "
-            "commands and send them to the nodes.", oCommandLine, false);
+            "commands and send them to the nodes.");
         TCLAP::SwitchArg oInfoSwitch("", "info", "Displays detailed cluster information and exits.", oCommandLine, false);
+
+        TCLAP::ValueArg<int32> oPortArg("", "port", "Port number for connection to host.", false, roConfig.m_iPortDefault,
+            "port number", oCommandLine);
+
+        TCLAP::ValueArg<std::string> oHostArg("", "host", "Host address of the server side of SNP (which is included into "
+            "main app) for worker executable to connect to.", true, roConfig.m_sHostDefault, "address");
+
+        oCommandLine.xorAdd(oHostArg, oTestSwitch);
         
         // Parse the argv array.
         oCommandLine.parse(argc, argv);
+        roConfig.m_sHost = oHostArg.getValue();
+        roConfig.m_iPort = oPortArg.getValue();
         roConfig.m_bTestEnabled = oTestSwitch.getValue();
         roConfig.m_bLogSystemInfo = oInfoSwitch.getValue();
+
+        // suppress test mode if server was specified
+        if (roConfig.m_sHost != roConfig.m_sHostDefault)
+            roConfig.m_bTestEnabled;
     }
     catch (...)
     {
@@ -164,7 +186,7 @@ static bool ProcessCommandLine(int argc, char* argv[], Config &roConfig)
 
 static int32 Connect(const std::string &sHost, int32 iPort)
 {
-    //LOG_MESSAGE(3, "SocketConnector: Connecting to %s:%d", sHost.c_str(), iPort);
+    LOG_MESSAGE(3, "Connecting to %s:%d", sHost.c_str(), iPort);
 
     uint64 iHost = inet_addr(sHost.c_str());
     if(iHost == INADDR_NONE)
