@@ -1,0 +1,8 @@
+# Load config values
+source settings.conf
+
+# Copy remote dir to local file system
+scp $USER@$CLUSTER:$REMOTE_FILES $LOCAL_DIR
+
+# Maybe delete some unnecessary local files
+

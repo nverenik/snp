@@ -1,0 +1,20 @@
+# Manual key selection:
+# ssh -i ~/.ssh/id_rsa .....
+# scp -i ~/.ssh/id_rsa .....
+
+# Script execution example: ./run 192.168.0.51 60666
+
+# Load config values
+source settings.conf
+
+# Build up run.pbs
+sed -e "s/\${p1}/$NODES/" -e "s/\${p2}/$1/" -e "s/\${p3}/$2/" run.pbs.template > run.pbs
+
+# Copy run.pbs to cluster head
+scp run.pbs $USER@$CLUSTER:$RUN_PBS_PATH
+
+# Set permissions for remote run.pbs for execution
+ssh $USER@$CLUSTER chmod 0777 $RUN_PBS_PATH
+
+# Set working directory & Launch run.pbs
+ssh $USER@$CLUSTER "cd $RUN_PBS_DIR;qsub $RUN_PBS_PATH"

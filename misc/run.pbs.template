@@ -1,0 +1,8 @@
+#!/bin/bash
+#PBS -N run
+#PBS -l nodes=${p1}:ppn=1
+#PBS -j oe
+
+cd $PBS_O_WORKDIR
+cat $PBS_NODEFILE > `hostname`.out
+/usr/lib64/openmpi/bin/mpirun -hostfile $PBS_NODEFILE ./snpworker --host ${p2} --port ${p3}
