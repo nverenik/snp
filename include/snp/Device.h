@@ -40,7 +40,7 @@ public:
 
 public:
     tmDevice();
-    ~tmDevice();
+    virtual ~tmDevice();
 
     CErrorCode Configure(uint32 uiCellsPerPU, uint32 uiNumberOfPU);
     CErrorCode End();

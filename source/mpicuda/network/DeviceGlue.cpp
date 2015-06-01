@@ -43,8 +43,8 @@ bool Exec(CProtocolHandler *pHandler, bool bSingleCell, tOperation eOperation, c
     oRequest.m_eType = tPacket::tType_RequestExec;
     oRequest.m_oData.asRequestExec.m_bSingleCell = bSingleCell;
     oRequest.m_oData.asRequestExec.m_eOperation = eOperation;
-    oRequest.m_oDynamicData.resize(uiInstructionSize);
-    memcpy(&oRequest.m_oDynamicData.front(), pInstruction, uiInstructionSize);
+    oRequest.m_oDynamicData.resize(uiInstructionSize * sizeof(uint32));
+    memcpy(&oRequest.m_oDynamicData.front(), pInstruction, uiInstructionSize * sizeof(uint32));
     pHandler->Write(&oRequest);
 
     tPacket oResponse = pHandler->Read();
